@@ -6,9 +6,9 @@ services:
     ports:
       - "${DATABASE_PORT}:5432"
     environment:
-      - POSTGRES_DB=${DATABASE_DB}
-      - POSTGRES_USER=${DATABASE_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in Portainer}
+      - DATABASE_DB=${DATABASE_DB}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:?DATABASE_PASSWORD is required in Portainer}
     volumes:
       - lavanderia-unique-postgres-data:/var/lib/postgresql/data
     healthcheck:
