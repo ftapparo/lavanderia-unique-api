@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+coverage/
+dist/
+*.tsbuildinfo
+
+# VCS
+.git/
+.gitignore
+
+# Local/dev files
+.vscode/
+.vscode-test/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Runtime/cache/temp
+logs/
+.cache/
+.nyc_output/
+.eslintcache
+
+# Docs and local instructions (not needed for image build)
+docs/
+AGENTS.md
+README.md
+
+# Tests
+tests/
+
+# Keep .env because Dockerfile currently copies it
