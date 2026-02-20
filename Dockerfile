@@ -22,7 +22,6 @@ RUN npm install --only=production && \
     npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
-COPY .env ./.env
 
 RUN mkdir -p logs storage/app-data
 
