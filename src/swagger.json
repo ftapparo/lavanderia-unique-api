@@ -1,30 +1,49 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "title": "Template API",
-    "description": "API base para novos projetos.",
+    "title": "Lavanderia Unique API",
+    "description": "API para autenticação, gestão de unidades e vínculos de unidade do sistema de lavanderia condominial.",
     "version": "1.0.0"
   },
   "servers": [
-    { "url": "/" }
+    {
+      "url": "/"
+    }
   ],
   "tags": [
-    { "name": "Health" },
-    { "name": "Auth" },
-    { "name": "Units" },
-    { "name": "UnitMemberships" }
+    {
+      "name": "Saúde",
+      "description": "Endpoints de verificação de disponibilidade da API."
+    },
+    {
+      "name": "Autenticação",
+      "description": "Endpoints de cadastro, login, renovação de token e usuário autenticado."
+    },
+    {
+      "name": "Unidades",
+      "description": "Endpoints para consulta e criação de unidades residenciais."
+    },
+    {
+      "name": "Vínculos de Unidade",
+      "description": "Endpoints para consultar, criar e atualizar vínculos entre usuários e unidades."
+    }
   ],
   "paths": {
     "/v1/api/health": {
       "get": {
-        "tags": ["Health"],
-        "summary": "Health check",
+        "tags": [
+          "Saúde"
+        ],
+        "summary": "Verificar saúde da API",
+        "description": "Retorna o status de funcionamento da API e o ambiente de execução atual.",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "API disponível.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseHealth" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseHealth"
+                }
               }
             }
           }
@@ -33,14 +52,19 @@
     },
     "/v1/api/healthcheck": {
       "get": {
-        "tags": ["Health"],
-        "summary": "Health check alias",
+        "tags": [
+          "Saúde"
+        ],
+        "summary": "Verificar saúde da API (alias)",
+        "description": "Alias de health check para compatibilidade com monitoramento e integrações legadas.",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "API disponível.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseHealth" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseHealth"
+                }
               }
             }
           }
@@ -49,22 +73,29 @@
     },
     "/v1/api/auth/register": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Register",
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Cadastrar novo usuário",
+        "description": "Cria uma nova conta de usuário e retorna tokens de autenticação junto com o perfil cadastrado.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Created",
+            "description": "Usuário cadastrado com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseAuth" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAuth"
+                }
               }
             }
           }
@@ -73,22 +104,29 @@
     },
     "/v1/api/auth/login": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Login",
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Autenticar usuário",
+        "description": "Autentica por e-mail ou CPF e retorna access token, refresh token e dados do usuário.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Autenticação realizada com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseAuth" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAuth"
+                }
               }
             }
           }
@@ -97,22 +135,29 @@
     },
     "/v1/api/auth/refresh": {
       "post": {
-        "tags": ["Auth"],
-        "summary": "Refresh token",
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Renovar tokens",
+        "description": "Recebe um refresh token válido e retorna novos tokens de autenticação.",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RefreshRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Tokens renovados com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseRefresh" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRefresh"
+                }
               }
             }
           }
@@ -121,15 +166,24 @@
     },
     "/v1/api/auth/me": {
       "get": {
-        "tags": ["Auth"],
-        "summary": "Current user",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Obter usuário autenticado",
+        "description": "Retorna os dados do usuário associado ao access token enviado no cabeçalho Authorization.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Dados do usuário autenticado.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseUser" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUser"
+                }
               }
             }
           }
@@ -138,38 +192,58 @@
     },
     "/v1/api/units": {
       "get": {
-        "tags": ["Units"],
-        "summary": "List units",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Unidades"
+        ],
+        "summary": "Listar unidades",
+        "description": "Retorna a lista de unidades disponíveis para o usuário autenticado.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Lista de unidades retornada com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseUnits" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnits"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["Units"],
-        "summary": "Create unit (admin)",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Unidades"
+        ],
+        "summary": "Criar unidade",
+        "description": "Cria uma nova unidade residencial. Endpoint restrito a usuários com perfil administrador.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateUnitRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateUnitRequest"
+              }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Created",
+            "description": "Unidade criada com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseUnit" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
               }
             }
           }
@@ -178,38 +252,58 @@
     },
     "/v1/api/unit-memberships": {
       "get": {
-        "tags": ["UnitMemberships"],
-        "summary": "List memberships",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Vínculos de Unidade"
+        ],
+        "summary": "Listar vínculos de unidade",
+        "description": "Retorna os vínculos entre usuários e unidades de acordo com as permissões do usuário autenticado.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Lista de vínculos retornada com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseMemberships" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMemberships"
+                }
               }
             }
           }
         }
       },
       "post": {
-        "tags": ["UnitMemberships"],
-        "summary": "Create membership (admin)",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Vínculos de Unidade"
+        ],
+        "summary": "Criar vínculo de unidade",
+        "description": "Cria um vínculo entre usuário e unidade com perfil e período de vigência. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateMembershipRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateMembershipRequest"
+              }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Created",
+            "description": "Vínculo criado com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseMembership" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMembership"
+                }
               }
             }
           }
@@ -218,31 +312,45 @@
     },
     "/v1/api/unit-memberships/{id}": {
       "patch": {
-        "tags": ["UnitMemberships"],
-        "summary": "Update membership (admin)",
-        "security": [{ "bearerAuth": [] }],
+        "tags": [
+          "Vínculos de Unidade"
+        ],
+        "summary": "Atualizar vínculo de unidade",
+        "description": "Atualiza os dados de um vínculo de unidade existente. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "description": "Identificador do vínculo de unidade.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateMembershipRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMembershipRequest"
+              }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Vínculo atualizado com sucesso.",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiResponseMembership" }
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMembership"
+                }
               }
             }
           }
@@ -251,8 +359,13 @@
     },
     "/v1/openapi.json": {
       "get": {
-        "summary": "OpenAPI",
-        "responses": { "200": { "description": "OK" } }
+        "summary": "Obter especificação OpenAPI",
+        "description": "Retorna o documento OpenAPI em formato JSON.",
+        "responses": {
+          "200": {
+            "description": "Especificação retornada com sucesso."
+          }
+        }
       }
     }
   },
@@ -267,186 +380,334 @@
     "schemas": {
       "ApiResponseBase": {
         "type": "object",
+        "description": "Envelope padrão de resposta da API.",
         "properties": {
-          "data": { "nullable": true },
-          "message": { "type": "string", "nullable": true },
-          "errors": { "nullable": true }
+          "data": {
+            "nullable": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "errors": {
+            "nullable": true
+          }
         }
       },
       "HealthData": {
         "type": "object",
         "properties": {
-          "status": { "type": "string" },
-          "environment": { "type": "string" }
+          "status": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          }
         }
       },
       "User": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "cpf": { "type": "string" },
-          "email": { "type": "string" },
-          "phone": { "type": "string", "nullable": true },
-          "role": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cpf": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string"
+          }
         }
       },
       "AuthData": {
         "type": "object",
         "properties": {
-          "accessToken": { "type": "string" },
-          "refreshToken": { "type": "string" },
-          "user": { "$ref": "#/components/schemas/User" }
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
         }
       },
       "RefreshData": {
         "type": "object",
         "properties": {
-          "accessToken": { "type": "string" },
-          "refreshToken": { "type": "string" }
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
         }
       },
       "Unit": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "code": { "type": "string" }
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
         }
       },
       "Membership": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "unitId": { "type": "string" },
-          "unitName": { "type": "string" },
-          "unitCode": { "type": "string" },
-          "profile": { "type": "string" },
-          "startDate": { "type": "string" },
-          "endDate": { "type": "string", "nullable": true },
-          "active": { "type": "boolean" }
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "unitId": {
+            "type": "string"
+          },
+          "unitName": {
+            "type": "string"
+          },
+          "unitCode": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
         }
       },
       "RegisterRequest": {
         "type": "object",
-        "required": ["name", "cpf", "email", "password"],
+        "required": [
+          "name",
+          "cpf",
+          "email",
+          "password"
+        ],
         "properties": {
-          "name": { "type": "string" },
-          "cpf": { "type": "string" },
-          "email": { "type": "string" },
-          "phone": { "type": "string" },
-          "password": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "cpf": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
         }
       },
       "LoginRequest": {
         "type": "object",
-        "required": ["identity", "password"],
+        "required": [
+          "identity",
+          "password"
+        ],
         "properties": {
-          "identity": { "type": "string" },
-          "password": { "type": "string" }
+          "identity": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
         }
       },
       "RefreshRequest": {
         "type": "object",
-        "required": ["refreshToken"],
+        "required": [
+          "refreshToken"
+        ],
         "properties": {
-          "refreshToken": { "type": "string" }
+          "refreshToken": {
+            "type": "string"
+          }
         }
       },
       "CreateUnitRequest": {
         "type": "object",
-        "required": ["name", "code"],
+        "required": [
+          "name",
+          "code"
+        ],
         "properties": {
-          "name": { "type": "string" },
-          "code": { "type": "string" }
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
         }
       },
       "CreateMembershipRequest": {
         "type": "object",
-        "required": ["userId", "unitId", "profile", "startDate"],
+        "required": [
+          "userId",
+          "unitId",
+          "profile",
+          "startDate"
+        ],
         "properties": {
-          "userId": { "type": "string" },
-          "unitId": { "type": "string" },
-          "profile": { "type": "string" },
-          "startDate": { "type": "string", "format": "date" },
-          "endDate": { "type": "string", "format": "date", "nullable": true },
-          "active": { "type": "boolean" }
+          "userId": {
+            "type": "string"
+          },
+          "unitId": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
         }
       },
       "UpdateMembershipRequest": {
         "type": "object",
         "properties": {
-          "profile": { "type": "string" },
-          "startDate": { "type": "string", "format": "date" },
-          "endDate": { "type": "string", "format": "date", "nullable": true },
-          "active": { "type": "boolean" }
+          "profile": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
         }
       },
       "ApiResponseHealth": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
-              "data": { "$ref": "#/components/schemas/HealthData" }
+              "data": {
+                "$ref": "#/components/schemas/HealthData"
+              }
             }
           }
         ]
       },
       "ApiResponseAuth": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
-              "data": { "$ref": "#/components/schemas/AuthData" }
+              "data": {
+                "$ref": "#/components/schemas/AuthData"
+              }
             }
           }
         ]
       },
       "ApiResponseRefresh": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
-              "data": { "$ref": "#/components/schemas/RefreshData" }
+              "data": {
+                "$ref": "#/components/schemas/RefreshData"
+              }
             }
           }
         ]
       },
       "ApiResponseUser": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
-              "data": { "$ref": "#/components/schemas/User" }
+              "data": {
+                "$ref": "#/components/schemas/User"
+              }
             }
           }
         ]
       },
       "ApiResponseUnit": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
-              "data": { "$ref": "#/components/schemas/Unit" }
+              "data": {
+                "$ref": "#/components/schemas/Unit"
+              }
             }
           }
         ]
       },
       "ApiResponseUnits": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
               "data": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/Unit" }
+                "items": {
+                  "$ref": "#/components/schemas/Unit"
+                }
               }
             }
           }
@@ -454,24 +715,32 @@
       },
       "ApiResponseMembership": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
-              "data": { "$ref": "#/components/schemas/Membership" }
+              "data": {
+                "$ref": "#/components/schemas/Membership"
+              }
             }
           }
         ]
       },
       "ApiResponseMemberships": {
         "allOf": [
-          { "$ref": "#/components/schemas/ApiResponseBase" },
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
           {
             "type": "object",
             "properties": {
               "data": {
                 "type": "array",
-                "items": { "$ref": "#/components/schemas/Membership" }
+                "items": {
+                  "$ref": "#/components/schemas/Membership"
+                }
               }
             }
           }
