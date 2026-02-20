@@ -26,4 +26,5 @@ volumes:
 
 networks:
   lavanderia-unique-network:
+    external: true
     name: lavanderia-unique-network
