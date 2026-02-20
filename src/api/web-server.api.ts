@@ -2,9 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from '../swagger.json';
-import healthRoutes from '../routes/health.routes';
-import type { Express } from 'express';
+import apiRoutes from '../routes/index.routes';
+import { requestContextMiddleware } from '../middleware/request-context';
+import { responseHandler } from '../middleware/response-handler';
+import { errorHandler } from '../middleware/error-handler';
+import type { Express, RequestHandler } from 'express';
 import type { Server } from 'http';
+import { env } from '../config/env';
 
 export const swaggerUiOptions = {
     swaggerOptions: {
@@ -29,8 +33,10 @@ export function createApp(): Express {
 
     app.options(/.*/, cors());
     app.use(express.json());
+    app.use(requestContextMiddleware);
+    app.use(responseHandler);
 
-    app.use('/v1/api', healthRoutes);
+    app.use('/v1/api', apiRoutes);
 
     app.use('/v1/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerUiOptions));
 
@@ -39,16 +45,18 @@ export function createApp(): Express {
         res.send(swaggerDocument);
     });
 
-    app.use((_req, res) => {
-        res.status(404).send();
-    });
+    const notFoundHandler: RequestHandler = (_req, res) => {
+        res.fail('Rota nao encontrada.', 404);
+    };
+    app.use(notFoundHandler);
+    app.use(errorHandler);
 
     return app;
 }
 
 export async function StartWebServer(appInstance: Express = createApp()): Promise<Server> {
     const app = appInstance;
-    const port = process.env.PORT || 3000;
+    const port = process.env.PORT || env.port;
 
     const server = app.listen(port, () => {
         console.log(`[Api] WebServer rodando na porta ${port}`);

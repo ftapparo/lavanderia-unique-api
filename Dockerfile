@@ -26,7 +26,7 @@ COPY .env ./.env
 
 RUN mkdir -p logs storage/app-data
 
-EXPOSE 3030
+EXPOSE 3000
 
 ENV NODE_ENV=production
 
