@@ -3,7 +3,12 @@ import { StartWebServer } from './api/web-server.api';
 
 const dotenvResult = dotenv.config();
 if (dotenvResult.error) {
-    console.error('[Server] Falha ao carregar .env:', dotenvResult.error);
+    const error = dotenvResult.error as NodeJS.ErrnoException;
+    if (error.code === 'ENOENT') {
+        console.log('[Server] .env nao encontrado. Usando variaveis de ambiente do container/sistema.');
+    } else {
+        console.error('[Server] Falha ao carregar .env:', dotenvResult.error);
+    }
 } else {
     console.log('[Server] .env carregado com sucesso');
 }
