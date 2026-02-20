@@ -132,3 +132,17 @@ Via .env:
 Ser o núcleo seguro e confiável do sistema,
 controlando energia, reservas e cobrança com
 previsibilidade e robustez.
+---
+
+## Windows (PowerShell) e UTF-8
+
+Para evitar problemas de encoding (mojibake) ao rodar scripts/comandos no Windows, configure o terminal para UTF-8 antes de trabalhar:
+
+```powershell
+chcp 65001
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding  = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+```
+
+Recomendado usar PowerShell 7 (`pwsh`) e manter os arquivos em UTF-8.

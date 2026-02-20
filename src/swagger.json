@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "Lavanderia Unique API",
-    "description": "API para autenticação, gestão de unidades e vínculos de unidade do sistema de lavanderia condominial. Todos os endpoints aceitam os headers opcionais x-request-id (correlação) e x-actor (ator), e os retornam na resposta quando dispon?veis.",
+    "description": "API para autenticação, gestão de unidades e vínculos de unidade do sistema de lavanderia condominial. Todos os endpoints utilizam os headers x-request-id (correlação) e x-actor (ator), e os retornam na resposta quando disponíveis.",
     "version": "1.0.0"
   },
   "servers": [
@@ -55,15 +55,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/healthcheck": {
@@ -92,15 +84,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/auth/register": {
@@ -139,15 +123,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/auth/login": {
@@ -186,15 +162,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/auth/refresh": {
@@ -233,15 +201,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/auth/me": {
@@ -275,15 +235,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/units": {
@@ -292,7 +244,7 @@
           "Unidades"
         ],
         "summary": "Listar unidades",
-        "description": "Retorna a lista de unidades dispon?veis para o usuário autenticado.",
+        "description": "Retorna a lista de unidades disponíveis para o usuário autenticado.",
         "security": [
           {
             "bearerAuth": []
@@ -317,15 +269,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
@@ -367,15 +311,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/unit-memberships": {
@@ -384,7 +320,7 @@
           "Vínculos de Unidade"
         ],
         "summary": "Listar vínculos de unidade",
-        "description": "Retorna os vínculos entre usuários e unidades de acordo com as permiss?es do usuário autenticado.",
+        "description": "Retorna os vínculos entre usuários e unidades de acordo com as permissões do usuário autenticado.",
         "security": [
           {
             "bearerAuth": []
@@ -409,22 +345,14 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       },
       "post": {
         "tags": [
           "Vínculos de Unidade"
         ],
         "summary": "Criar vinculo de unidade",
-        "description": "Cria um vinculo entre usuário e unidade com perfil e período de vig?ncia. Endpoint restrito a administradores.",
+        "description": "Cria um vínculo entre usuário e unidade com perfil e período de vigência. Endpoint restrito a administradores.",
         "security": [
           {
             "bearerAuth": []
@@ -459,15 +387,7 @@
               }
             }
           }
-        },
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
-        ]
+        }
       }
     },
     "/v1/api/unit-memberships/{id}": {
@@ -484,16 +404,10 @@
         ],
         "parameters": [
           {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          },
-          {
             "name": "id",
             "in": "path",
             "required": true,
-            "description": "Identificador do vÃ­nculo de unidade.",
+            "description": "Identificador do vínculo de unidade.",
             "schema": {
               "type": "string"
             }
@@ -550,14 +464,6 @@
         },
         "tags": [
           "Saúde"
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/ActorRequestHeader"
-          },
-          {
-            "$ref": "#/components/parameters/RequestIdRequestHeader"
-          }
         ]
       }
     }
@@ -954,26 +860,6 @@
           "type": "string",
           "example": "SWAGGER"
         }
-      }
-    },
-    "parameters": {
-      "RequestIdRequestHeader": {
-        "name": "x-request-id",
-        "in": "header",
-        "required": false,
-        "schema": {
-          "type": "string"
-        },
-        "description": "Identificador de correlação da requisição. Quando informado, e propagado na resposta para rastreabilidade."
-      },
-      "ActorRequestHeader": {
-        "name": "x-actor",
-        "in": "header",
-        "required": false,
-        "schema": {
-          "type": "string"
-        },
-        "description": "Identificação do ator da requisição para auditoria (ex.: user:123, system:cron)."
       }
     }
   }

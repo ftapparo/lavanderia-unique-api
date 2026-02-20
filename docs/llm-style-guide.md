@@ -102,3 +102,19 @@ Certo:
 
 Errado:
 - nomes ligados a cliente/projeto antigo
+
+## Windows UTF-8 (obrigatorio)
+
+Para evitar mojibake ao editar/gerar arquivos via shell no Windows:
+
+```powershell
+chcp 65001
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding  = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+```
+
+Regras:
+- Preferir PowerShell 7 (`pwsh`).
+- Sempre gravar arquivos em UTF-8.
+- Em caso de texto corrompido (`Ã`, `?`, `�`), interromper e corrigir encoding antes de continuar.
