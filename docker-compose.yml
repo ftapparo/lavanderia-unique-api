@@ -6,7 +6,7 @@ services:
     container_name: lavanderia-unique-api
     restart: unless-stopped
     ports:
-      - "${API_PORT}:${API_PORT}"
+      - "${CONTAINER_PORT}:${API_PORT}"
     env_file:
       - .env
     environment:
