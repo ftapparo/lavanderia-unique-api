@@ -4,7 +4,7 @@ import type { MachineRecord, MachineType, MachineView } from '../../types/domain
 export const machinesRepository = {
     async findById(id: string): Promise<MachineRecord | null> {
         const result = await db.query<MachineRecord>(
-            `SELECT id, unit_id, name, type, tuya_device_id, active, created_at, updated_at
+            `SELECT id, number, brand, model, name, type, tuya_device_id, active, created_at, updated_at
              FROM machines
              WHERE id = $1
              LIMIT 1`,
@@ -15,17 +15,19 @@ export const machinesRepository = {
     },
 
     async create(input: {
-        unitId: string;
+        number: number;
+        brand: string;
+        model: string;
         name: string;
         type: MachineType;
         tuyaDeviceId?: string | null;
         active?: boolean;
     }): Promise<MachineRecord> {
         const result = await db.query<MachineRecord>(
-            `INSERT INTO machines (unit_id, name, type, tuya_device_id, active)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, unit_id, name, type, tuya_device_id, active, created_at, updated_at`,
-            [input.unitId, input.name, input.type, input.tuyaDeviceId ?? null, input.active ?? true],
+            `INSERT INTO machines (number, brand, model, name, type, tuya_device_id, active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING id, number, brand, model, name, type, tuya_device_id, active, created_at, updated_at`,
+            [input.number, input.brand, input.model, input.name, input.type, input.tuyaDeviceId ?? null, input.active ?? true],
         );
 
         return result.rows[0];
@@ -34,14 +36,13 @@ export const machinesRepository = {
     async findViewById(id: string): Promise<MachineView | null> {
         const result = await db.query<MachineView>(
             `SELECT m.id,
-                    m.unit_id AS "unitId",
-                    u.name AS "unitName",
-                    u.code AS "unitCode",
+                    m.number,
+                    m.brand,
+                    m.model,
                     m.name,
                     m.type,
                     m.active
              FROM machines m
-             INNER JOIN units u ON u.id = m.unit_id
              WHERE m.id = $1
              LIMIT 1`,
             [id],
@@ -50,18 +51,55 @@ export const machinesRepository = {
         return result.rows[0] || null;
     },
 
+    async update(id: string, input: {
+        number?: number;
+        brand?: string;
+        model?: string;
+        name?: string;
+        type?: MachineType;
+        tuyaDeviceId?: string | null;
+        active?: boolean;
+    }): Promise<MachineRecord | null> {
+        const result = await db.query<MachineRecord>(
+            `UPDATE machines
+             SET number = COALESCE($2, number),
+                 brand = COALESCE($3, brand),
+                 model = COALESCE($4, model),
+                 name = COALESCE($5, name),
+                 type = COALESCE($6, type),
+                 tuya_device_id = $7,
+                 active = COALESCE($8, active),
+                 updated_at = NOW()
+             WHERE id = $1
+             RETURNING id, number, brand, model, name, type, tuya_device_id, active, created_at, updated_at`,
+            [id, input.number ?? null, input.brand ?? null, input.model ?? null, input.name ?? null, input.type ?? null, input.tuyaDeviceId ?? null, input.active ?? null],
+        );
+
+        return result.rows[0] || null;
+    },
+
+    async deleteById(id: string): Promise<boolean> {
+        const result = await db.query<{ id: string }>(
+            `DELETE FROM machines
+             WHERE id = $1
+             RETURNING id`,
+            [id],
+        );
+
+        return Boolean(result.rows[0]);
+    },
+
     async listAll(): Promise<MachineView[]> {
         const result = await db.query<MachineView>(
             `SELECT m.id,
-                    m.unit_id AS "unitId",
-                    u.name AS "unitName",
-                    u.code AS "unitCode",
+                    m.number,
+                    m.brand,
+                    m.model,
                     m.name,
                     m.type,
                     m.active
              FROM machines m
-             INNER JOIN units u ON u.id = m.unit_id
-             ORDER BY u.code, m.type, m.name`,
+             ORDER BY m.number`,
             [],
         );
 
@@ -69,23 +107,18 @@ export const machinesRepository = {
     },
 
     async listByUserId(userId: string): Promise<MachineView[]> {
+        void userId;
         const result = await db.query<MachineView>(
-            `SELECT DISTINCT m.id,
-                    m.unit_id AS "unitId",
-                    u.name AS "unitName",
-                    u.code AS "unitCode",
+            `SELECT m.id,
+                    m.number,
+                    m.brand,
+                    m.model,
                     m.name,
                     m.type,
                     m.active
              FROM machines m
-             INNER JOIN units u ON u.id = m.unit_id
-             INNER JOIN unit_memberships um ON um.unit_id = u.id
-             WHERE um.user_id = $1
-               AND um.active = true
-               AND um.start_date <= CURRENT_DATE
-               AND (um.end_date IS NULL OR um.end_date >= CURRENT_DATE)
-             ORDER BY u.code, m.type, m.name`,
-            [userId],
+             ORDER BY m.number`,
+            [],
         );
 
         return result.rows;

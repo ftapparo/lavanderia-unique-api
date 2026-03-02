@@ -51,4 +51,29 @@ export const usersRepository = {
 
         return result.rows[0] || null;
     },
+
+    async listAll(): Promise<Array<{
+        id: string;
+        name: string;
+        cpf: string;
+        email: string;
+        phone: string | null;
+        role: UserRole;
+    }>> {
+        const result = await db.query<{
+            id: string;
+            name: string;
+            cpf: string;
+            email: string;
+            phone: string | null;
+            role: UserRole;
+        }>(
+            `SELECT id, name, cpf, email, phone, role
+             FROM users
+             ORDER BY name`,
+            [],
+        );
+
+        return result.rows;
+    },
 };

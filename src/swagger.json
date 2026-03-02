@@ -38,6 +38,10 @@
     {
       "name": "Reservas",
       "description": "Endpoints para criacao, consulta e cancelamento de reservas de 2 horas."
+    },
+    {
+      "name": "Usuarios",
+      "description": "Endpoints administrativos para consulta de usuarios."
     }
   ],
   "paths": {
@@ -288,7 +292,7 @@
           "Unidades"
         ],
         "summary": "Criar unidade",
-        "description": "Cria uma nova unidade residencial. Endpoint restrito a usuários com perfil administrador.",
+        "description": "Cria uma nova unidade residencial informando andar e numero da unidade. O codigo e sequencial e gerado automaticamente.",
         "security": [
           {
             "bearerAuth": []
@@ -553,7 +557,7 @@
           "Maquinas"
         ],
         "summary": "Criar maquina",
-        "description": "Cria uma maquina (lavadora ou secadora) para uma unidade. Endpoint restrito a administradores.",
+        "description": "Cria uma maquina (lavadora ou secadora) com numero, marca e modelo. Endpoint restrito a administradores.",
         "security": [
           {
             "bearerAuth": []
@@ -755,7 +759,7 @@
           "Pares de Maquinas"
         ],
         "summary": "Criar par de maquinas",
-        "description": "Cria um novo par de maquinas para uma unidade. Endpoint restrito a administradores.",
+        "description": "Cria um novo par de maquinas vinculando uma lavadora e uma secadora. Endpoint restrito a administradores.",
         "security": [
           {
             "bearerAuth": []
@@ -1256,6 +1260,600 @@
           }
         }
       }
+    },
+    "/v1/api/units/{id}": {
+      "patch": {
+        "tags": [
+          "Unidades"
+        ],
+        "summary": "Atualizar unidade",
+        "description": "Atualiza andar, numero da unidade e/ou status ativo. O nome e recomputado automaticamente.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identificador da unidade."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUnitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unidade atualizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados invalidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "Unidade nao encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de unidade para o mesmo andar e numero.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno do servidor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Unidades"
+        ],
+        "summary": "Remover unidade",
+        "description": "Remove uma unidade. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identificador da unidade."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unidade removida com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "Unidade nao encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "409": {
+            "description": "Unidade possui relacionamentos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/machines/{id}": {
+      "patch": {
+        "tags": [
+          "Maquinas"
+        ],
+        "summary": "Atualizar maquina",
+        "description": "Atualiza dados de uma maquina. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identificador da maquina."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMachineRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Maquina atualizada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMachine"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados invalidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "Maquina ou unidade nao encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Maquinas"
+        ],
+        "summary": "Remover maquina",
+        "description": "Remove uma maquina. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identificador da maquina."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Maquina removida com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "Maquina nao encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "409": {
+            "description": "Maquina possui relacionamentos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/users": {
+      "get": {
+        "tags": [
+          "Usuarios"
+        ],
+        "summary": "Listar usuarios",
+        "description": "Retorna usuarios cadastrados. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios retornada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUsers"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1354,6 +1952,17 @@
           },
           "code": {
             "type": "string"
+          },
+          "floor": {
+            "type": "integer",
+            "nullable": true
+          },
+          "unitNumber": {
+            "type": "integer",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
           }
         }
       },
@@ -1445,15 +2054,18 @@
       "CreateUnitRequest": {
         "type": "object",
         "required": [
-          "name",
-          "code"
+          "floor",
+          "unitNumber"
         ],
         "properties": {
-          "name": {
-            "type": "string"
+          "floor": {
+            "type": "integer"
           },
-          "code": {
-            "type": "string"
+          "unitNumber": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
           }
         }
       },
@@ -1642,14 +2254,13 @@
             "type": "string",
             "format": "uuid"
           },
-          "unitId": {
-            "type": "string",
-            "format": "uuid"
+          "number": {
+            "type": "integer"
           },
-          "unitName": {
+          "brand": {
             "type": "string"
           },
-          "unitCode": {
+          "model": {
             "type": "string"
           },
           "name": {
@@ -1673,16 +2284,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "unitId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "unitName": {
-            "type": "string"
-          },
-          "unitCode": {
-            "type": "string"
           },
           "name": {
             "type": "string"
@@ -1765,16 +2366,11 @@
       "CreateMachinePairRequest": {
         "type": "object",
         "required": [
-          "unitId",
           "name",
           "washerMachineId",
           "dryerMachineId"
         ],
         "properties": {
-          "unitId": {
-            "type": "string",
-            "format": "uuid"
-          },
           "name": {
             "type": "string"
           },
@@ -1794,10 +2390,15 @@
       "CreateReservationRequest": {
         "type": "object",
         "required": [
+          "unitId",
           "machinePairId",
           "startAt"
         ],
         "properties": {
+          "unitId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "machinePairId": {
             "type": "string",
             "format": "uuid"
@@ -1910,14 +2511,62 @@
       "CreateMachineRequest": {
         "type": "object",
         "required": [
-          "unitId",
-          "name",
+          "number",
+          "brand",
+          "model",
           "type"
         ],
         "properties": {
-          "unitId": {
+          "number": {
+            "type": "integer"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "type": {
             "type": "string",
-            "format": "uuid"
+            "enum": [
+              "WASHER",
+              "DRYER"
+            ]
+          },
+          "tuyaDeviceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateUnitRequest": {
+        "type": "object",
+        "properties": {
+          "floor": {
+            "type": "integer"
+          },
+          "unitNumber": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateMachineRequest": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer"
+          },
+          "brand": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
           },
           "name": {
             "type": "string"
@@ -1937,6 +2586,53 @@
             "type": "boolean"
           }
         }
+      },
+      "UserListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cpf": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "ADMIN"
+            ]
+          }
+        }
+      },
+      "ApiResponseUsers": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UserListItem"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "headers": {

@@ -16,6 +16,9 @@ export type UnitRecord = {
     id: string;
     name: string;
     code: string;
+    floor: number | null;
+    unit_number: number | null;
+    active: boolean;
     created_at: string;
     updated_at: string;
 };
@@ -67,13 +70,18 @@ export type UnitView = {
     id: string;
     name: string;
     code: string;
+    floor: number | null;
+    unitNumber: number | null;
+    active: boolean;
 };
 
 export type MachineType = 'WASHER' | 'DRYER';
 
 export type MachineRecord = {
     id: string;
-    unit_id: string;
+    number: number;
+    brand: string;
+    model: string;
     name: string;
     type: MachineType;
     tuya_device_id: string | null;
@@ -84,9 +92,9 @@ export type MachineRecord = {
 
 export type MachineView = {
     id: string;
-    unitId: string;
-    unitName: string;
-    unitCode: string;
+    number: number;
+    brand: string;
+    model: string;
     name: string;
     type: MachineType;
     active: boolean;
@@ -94,7 +102,6 @@ export type MachineView = {
 
 export type MachinePairRecord = {
     id: string;
-    unit_id: string;
     name: string;
     washer_machine_id: string;
     dryer_machine_id: string;
@@ -105,9 +112,6 @@ export type MachinePairRecord = {
 
 export type MachinePairView = {
     id: string;
-    unitId: string;
-    unitName: string;
-    unitCode: string;
     name: string;
     washerMachineId: string;
     washerMachineName: string;

@@ -4,6 +4,7 @@ import { reservationsService } from '../services/reservations.service';
 export const reservationsController = {
     async create(req: Request, res: Response) {
         const reservation = await reservationsService.create({
+            unitId: String(req.body?.unitId || ''),
             machinePairId: String(req.body?.machinePairId || ''),
             startAt: String(req.body?.startAt || ''),
         }, String(req.auth?.userId));

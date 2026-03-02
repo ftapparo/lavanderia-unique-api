@@ -4,7 +4,6 @@ import { machinePairsService } from '../services/machine-pairs.service';
 export const machinePairsController = {
     async create(req: Request, res: Response) {
         const pair = await machinePairsService.create({
-            unitId: String(req.body?.unitId || ''),
             name: String(req.body?.name || ''),
             washerMachineId: String(req.body?.washerMachineId || ''),
             dryerMachineId: String(req.body?.dryerMachineId || ''),

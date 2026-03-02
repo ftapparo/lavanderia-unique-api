@@ -47,12 +47,14 @@ const mapReservationDbError = (error: unknown): never => {
 
 export const reservationsService = {
     async create(input: {
+        unitId: string;
         machinePairId: string;
         startAt: string;
     }, userId: string): Promise<ReservationRecord> {
+        const unitId = input.unitId.trim();
         const machinePairId = input.machinePairId.trim();
-        if (!machinePairId) {
-            throw new AppError('Par de maquinas obrigatorio.', 400);
+        if (!unitId || !machinePairId) {
+            throw new AppError('Unidade e par de maquinas sao obrigatorios.', 400);
         }
 
         const startAt = toDate(input.startAt);
@@ -67,14 +69,14 @@ export const reservationsService = {
             throw new AppError('Par de maquinas inativo.', 400);
         }
 
-        const activeMembership = await hasActiveMembershipOnDate(userId, pair.unit_id, startAt);
+        const activeMembership = await hasActiveMembershipOnDate(userId, unitId, startAt);
         if (!activeMembership) {
             throw new AppError('Usuario sem vinculo ativo para a unidade da reserva.', 403);
         }
 
         try {
             const reservation = await reservationsRepository.create({
-                unitId: pair.unit_id,
+                unitId,
                 machinePairId: pair.id,
                 userId,
                 startAt: toIso(startAt),

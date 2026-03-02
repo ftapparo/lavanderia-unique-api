@@ -8,5 +8,7 @@ const router = express.Router();
 
 router.get('/units', authMiddleware, asyncHandler(unitsController.list));
 router.post('/units', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.create));
+router.patch('/units/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.update));
+router.delete('/units/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.remove));
 
 export default router;

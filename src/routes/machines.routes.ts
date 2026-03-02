@@ -8,5 +8,7 @@ const router = express.Router();
 
 router.get('/machines', authMiddleware, asyncHandler(machinesController.list));
 router.post('/machines', authMiddleware, requireRole('ADMIN'), asyncHandler(machinesController.create));
+router.patch('/machines/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(machinesController.update));
+router.delete('/machines/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(machinesController.remove));
 
 export default router;

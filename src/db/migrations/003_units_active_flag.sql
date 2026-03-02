@@ -1,0 +1,4 @@
+ALTER TABLE units
+ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT true;
+
+CREATE INDEX IF NOT EXISTS idx_units_active ON units(active);

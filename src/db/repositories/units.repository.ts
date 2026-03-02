@@ -2,12 +2,12 @@ import { db } from '../pool';
 import type { UnitRecord, UnitView } from '../../types/domain.types';
 
 export const unitsRepository = {
-    async create(name: string, code: string): Promise<UnitRecord> {
+    async create(input: { name: string; floor: number; unitNumber: number; active: boolean }): Promise<UnitRecord> {
         const result = await db.query<UnitRecord>(
-            `INSERT INTO units (name, code)
-             VALUES ($1, $2)
-             RETURNING id, name, code, created_at, updated_at`,
-            [name, code],
+            `INSERT INTO units (name, code, floor, unit_number, active)
+             VALUES ($1, nextval('units_code_seq')::TEXT, $2, $3, $4)
+             RETURNING id, name, code, floor, unit_number, active, created_at, updated_at`,
+            [input.name, input.floor, input.unitNumber, input.active],
         );
 
         return result.rows[0];
@@ -15,16 +15,47 @@ export const unitsRepository = {
 
     async findById(id: string): Promise<UnitRecord | null> {
         const result = await db.query<UnitRecord>(
-            `SELECT id, name, code, created_at, updated_at FROM units WHERE id = $1 LIMIT 1`,
+            `SELECT id, name, code, floor, unit_number, active, created_at, updated_at FROM units WHERE id = $1 LIMIT 1`,
             [id],
         );
 
         return result.rows[0] || null;
     },
 
+    async update(id: string, input: { name?: string; floor?: number; unitNumber?: number; active?: boolean }): Promise<UnitRecord | null> {
+        const result = await db.query<UnitRecord>(
+            `UPDATE units
+             SET name = COALESCE($2, name),
+                 floor = COALESCE($3, floor),
+                 unit_number = COALESCE($4, unit_number),
+                 active = COALESCE($5, active),
+                 updated_at = NOW()
+             WHERE id = $1
+             RETURNING id, name, code, floor, unit_number, active, created_at, updated_at`,
+            [id, input.name ?? null, input.floor ?? null, input.unitNumber ?? null, input.active ?? null],
+        );
+
+        return result.rows[0] || null;
+    },
+
+    async deleteById(id: string): Promise<boolean> {
+        const result = await db.query<{ id: string }>(
+            `DELETE FROM units
+             WHERE id = $1
+             RETURNING id`,
+            [id],
+        );
+
+        return Boolean(result.rows[0]);
+    },
+
     async listAll(): Promise<UnitView[]> {
         const result = await db.query<UnitView>(
-            `SELECT id, name, code FROM units ORDER BY code`,
+            `SELECT id, name, code, floor, unit_number AS "unitNumber", active
+             FROM units
+             ORDER BY
+                CASE WHEN code ~ '^[0-9]+$' THEN code::BIGINT ELSE 9223372036854775807 END,
+                code`,
             [],
         );
 
@@ -33,14 +64,20 @@ export const unitsRepository = {
 
     async listByUserId(userId: string): Promise<UnitView[]> {
         const result = await db.query<UnitView>(
-            `SELECT DISTINCT u.id, u.name, u.code
-             FROM units u
-             INNER JOIN unit_memberships m ON m.unit_id = u.id
-             WHERE m.user_id = $1
-               AND m.active = true
-               AND m.start_date <= CURRENT_DATE
-               AND (m.end_date IS NULL OR m.end_date >= CURRENT_DATE)
-             ORDER BY u.code`,
+            `SELECT t.id, t.name, t.code, t.floor, t."unitNumber", t.active
+             FROM (
+                SELECT DISTINCT u.id, u.name, u.code, u.floor, u.unit_number AS "unitNumber", u.active
+                FROM units u
+                INNER JOIN unit_memberships m ON m.unit_id = u.id
+                WHERE m.user_id = $1
+                  AND u.active = true
+                  AND m.active = true
+                  AND m.start_date <= CURRENT_DATE
+                  AND (m.end_date IS NULL OR m.end_date >= CURRENT_DATE)
+             ) t
+             ORDER BY
+                CASE WHEN t.code ~ '^[0-9]+$' THEN t.code::BIGINT ELSE 9223372036854775807 END,
+                t.code`,
             [userId],
         );
 

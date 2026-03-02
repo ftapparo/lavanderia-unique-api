@@ -18,7 +18,6 @@ describe('reservations.service', () => {
 
         jest.spyOn(machinePairsRepository, 'findById').mockResolvedValue({
             id: pairId,
-            unit_id: unitId,
             name: 'Par A',
             washer_machine_id: 'm-w-1',
             dryer_machine_id: 'm-d-1',
@@ -53,7 +52,7 @@ describe('reservations.service', () => {
         });
         jest.spyOn(auditLogsRepository, 'add').mockResolvedValue(undefined);
 
-        const result = await reservationsService.create({ machinePairId: pairId, startAt }, userId);
+        const result = await reservationsService.create({ unitId, machinePairId: pairId, startAt }, userId);
 
         expect(result.id).toBe('res-1');
         expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
@@ -69,7 +68,6 @@ describe('reservations.service', () => {
     it('blocks creation when user has no active membership', async () => {
         jest.spyOn(machinePairsRepository, 'findById').mockResolvedValue({
             id: pairId,
-            unit_id: unitId,
             name: 'Par A',
             washer_machine_id: 'm-w-1',
             dryer_machine_id: 'm-d-1',
@@ -80,6 +78,7 @@ describe('reservations.service', () => {
         jest.spyOn(membershipsRepository, 'findActiveByUserAndUnitOnDate').mockResolvedValue(null);
 
         await expect(reservationsService.create({
+            unitId,
             machinePairId: pairId,
             startAt: '2026-03-03T10:00:00.000Z',
         }, userId)).rejects.toMatchObject({ status: 403 });
@@ -88,7 +87,6 @@ describe('reservations.service', () => {
     it('maps overlap conflict to 409', async () => {
         jest.spyOn(machinePairsRepository, 'findById').mockResolvedValue({
             id: pairId,
-            unit_id: unitId,
             name: 'Par A',
             washer_machine_id: 'm-w-1',
             dryer_machine_id: 'm-d-1',
@@ -110,6 +108,7 @@ describe('reservations.service', () => {
         jest.spyOn(reservationsRepository, 'create').mockRejectedValue({ code: '23P01' });
 
         await expect(reservationsService.create({
+            unitId,
             machinePairId: pairId,
             startAt: '2026-03-03T10:00:00.000Z',
         }, userId)).rejects.toMatchObject({ status: 409 });

@@ -9,10 +9,26 @@ export const unitsController = {
 
     async create(req: Request, res: Response) {
         const unit = await unitsService.create({
-            name: String(req.body?.name || ''),
-            code: String(req.body?.code || ''),
+            floor: Number(req.body?.floor),
+            unitNumber: Number(req.body?.unitNumber),
+            active: typeof req.body?.active === 'boolean' ? req.body.active : undefined,
         }, String(req.auth?.userId));
 
         res.ok(unit, 201);
+    },
+
+    async update(req: Request, res: Response) {
+        const unit = await unitsService.update(String(req.params.id || ''), {
+            floor: typeof req.body?.floor === 'number' ? Number(req.body.floor) : undefined,
+            unitNumber: typeof req.body?.unitNumber === 'number' ? Number(req.body.unitNumber) : undefined,
+            active: typeof req.body?.active === 'boolean' ? req.body.active : undefined,
+        }, String(req.auth?.userId));
+
+        res.ok(unit);
+    },
+
+    async remove(req: Request, res: Response) {
+        await unitsService.remove(String(req.params.id || ''), String(req.auth?.userId));
+        res.ok({ id: String(req.params.id || ''), removed: true });
     },
 };

@@ -3,17 +3,16 @@ import type { MachinePairRecord, MachinePairView } from '../../types/domain.type
 
 export const machinePairsRepository = {
     async create(input: {
-        unitId: string;
         name: string;
         washerMachineId: string;
         dryerMachineId: string;
         active?: boolean;
     }): Promise<MachinePairRecord> {
         const result = await db.query<MachinePairRecord>(
-            `INSERT INTO machine_pairs (unit_id, name, washer_machine_id, dryer_machine_id, active)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, unit_id, name, washer_machine_id, dryer_machine_id, active, created_at, updated_at`,
-            [input.unitId, input.name, input.washerMachineId, input.dryerMachineId, input.active ?? true],
+            `INSERT INTO machine_pairs (name, washer_machine_id, dryer_machine_id, active)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id, name, washer_machine_id, dryer_machine_id, active, created_at, updated_at`,
+            [input.name, input.washerMachineId, input.dryerMachineId, input.active ?? true],
         );
 
         return result.rows[0];
@@ -21,7 +20,7 @@ export const machinePairsRepository = {
 
     async findById(id: string): Promise<MachinePairRecord | null> {
         const result = await db.query<MachinePairRecord>(
-            `SELECT id, unit_id, name, washer_machine_id, dryer_machine_id, active, created_at, updated_at
+            `SELECT id, name, washer_machine_id, dryer_machine_id, active, created_at, updated_at
              FROM machine_pairs
              WHERE id = $1
              LIMIT 1`,
@@ -34,9 +33,6 @@ export const machinePairsRepository = {
     async listAll(): Promise<MachinePairView[]> {
         const result = await db.query<MachinePairView>(
             `SELECT mp.id,
-                    mp.unit_id AS "unitId",
-                    u.name AS "unitName",
-                    u.code AS "unitCode",
                     mp.name,
                     mp.washer_machine_id AS "washerMachineId",
                     mw.name AS "washerMachineName",
@@ -44,10 +40,9 @@ export const machinePairsRepository = {
                     md.name AS "dryerMachineName",
                     mp.active
              FROM machine_pairs mp
-             INNER JOIN units u ON u.id = mp.unit_id
              INNER JOIN machines mw ON mw.id = mp.washer_machine_id
              INNER JOIN machines md ON md.id = mp.dryer_machine_id
-             ORDER BY u.code, mp.name`,
+             ORDER BY mp.name`,
             [],
         );
 
@@ -55,11 +50,9 @@ export const machinePairsRepository = {
     },
 
     async listByUserId(userId: string): Promise<MachinePairView[]> {
+        void userId;
         const result = await db.query<MachinePairView>(
-            `SELECT DISTINCT mp.id,
-                    mp.unit_id AS "unitId",
-                    u.name AS "unitName",
-                    u.code AS "unitCode",
+            `SELECT mp.id,
                     mp.name,
                     mp.washer_machine_id AS "washerMachineId",
                     mw.name AS "washerMachineName",
@@ -67,16 +60,10 @@ export const machinePairsRepository = {
                     md.name AS "dryerMachineName",
                     mp.active
              FROM machine_pairs mp
-             INNER JOIN units u ON u.id = mp.unit_id
              INNER JOIN machines mw ON mw.id = mp.washer_machine_id
              INNER JOIN machines md ON md.id = mp.dryer_machine_id
-             INNER JOIN unit_memberships um ON um.unit_id = u.id
-             WHERE um.user_id = $1
-               AND um.active = true
-               AND um.start_date <= CURRENT_DATE
-               AND (um.end_date IS NULL OR um.end_date >= CURRENT_DATE)
-             ORDER BY u.code, mp.name`,
-            [userId],
+             ORDER BY mp.name`,
+            [],
         );
 
         return result.rows;
