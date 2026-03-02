@@ -68,3 +68,81 @@ export type UnitView = {
     name: string;
     code: string;
 };
+
+export type MachineType = 'WASHER' | 'DRYER';
+
+export type MachineRecord = {
+    id: string;
+    unit_id: string;
+    name: string;
+    type: MachineType;
+    tuya_device_id: string | null;
+    active: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+export type MachineView = {
+    id: string;
+    unitId: string;
+    unitName: string;
+    unitCode: string;
+    name: string;
+    type: MachineType;
+    active: boolean;
+};
+
+export type MachinePairRecord = {
+    id: string;
+    unit_id: string;
+    name: string;
+    washer_machine_id: string;
+    dryer_machine_id: string;
+    active: boolean;
+    created_at: string;
+    updated_at: string;
+};
+
+export type MachinePairView = {
+    id: string;
+    unitId: string;
+    unitName: string;
+    unitCode: string;
+    name: string;
+    washerMachineId: string;
+    washerMachineName: string;
+    dryerMachineId: string;
+    dryerMachineName: string;
+    active: boolean;
+};
+
+export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'IN_PROGRESS' | 'FINISHED';
+
+export type ReservationRecord = {
+    id: string;
+    unit_id: string;
+    machine_pair_id: string;
+    user_id: string;
+    start_at: string;
+    end_at: string;
+    status: ReservationStatus;
+    canceled_at: string | null;
+    canceled_by_user_id: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+export type ReservationView = {
+    id: string;
+    unitId: string;
+    unitName: string;
+    unitCode: string;
+    machinePairId: string;
+    machinePairName: string;
+    userId: string;
+    userName: string;
+    startAt: string;
+    endAt: string;
+    status: ReservationStatus;
+    canceledAt: string | null;
+};

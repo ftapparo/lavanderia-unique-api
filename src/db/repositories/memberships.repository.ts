@@ -95,4 +95,21 @@ export const membershipsRepository = {
 
         return result.rows;
     },
+
+    async findActiveByUserAndUnitOnDate(userId: string, unitId: string, dateIso: string): Promise<UnitMembershipRecord | null> {
+        const result = await db.query<UnitMembershipRecord>(
+            `SELECT id, user_id, unit_id, profile, start_date, end_date, active, created_at, updated_at
+             FROM unit_memberships
+             WHERE user_id = $1
+               AND unit_id = $2
+               AND active = true
+               AND start_date <= $3::date
+               AND (end_date IS NULL OR end_date >= $3::date)
+             ORDER BY start_date DESC
+             LIMIT 1`,
+            [userId, unitId, dateIso],
+        );
+
+        return result.rows[0] || null;
+    },
 };
