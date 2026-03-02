@@ -97,6 +97,7 @@ export type MachineView = {
     model: string;
     name: string;
     type: MachineType;
+    tuyaDeviceId: string | null;
     active: boolean;
 };
 

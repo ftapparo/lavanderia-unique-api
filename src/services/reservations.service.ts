@@ -2,6 +2,7 @@ import { auditLogsRepository } from '../db/repositories/audit-logs.repository';
 import { machinePairsRepository } from '../db/repositories/machine-pairs.repository';
 import { membershipsRepository } from '../db/repositories/memberships.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
+import { usersRepository } from '../db/repositories/users.repository';
 import type { ReservationRecord, ReservationView } from '../types/domain.types';
 import { AppError } from '../utils/app-error';
 
@@ -50,12 +51,16 @@ export const reservationsService = {
         unitId: string;
         machinePairId: string;
         startAt: string;
-    }, userId: string): Promise<ReservationRecord> {
+        userId?: string;
+    }, userId: string, isAdmin: boolean): Promise<ReservationRecord> {
         const unitId = input.unitId.trim();
         const machinePairId = input.machinePairId.trim();
         if (!unitId || !machinePairId) {
             throw new AppError('Unidade e par de maquinas sao obrigatorios.', 400);
         }
+        const targetReservationUserId = isAdmin && input.userId?.trim()
+            ? input.userId.trim()
+            : userId;
 
         const startAt = toDate(input.startAt);
         const endAt = new Date(startAt.getTime() + TWO_HOURS_MS);
@@ -69,16 +74,25 @@ export const reservationsService = {
             throw new AppError('Par de maquinas inativo.', 400);
         }
 
-        const activeMembership = await hasActiveMembershipOnDate(userId, unitId, startAt);
-        if (!activeMembership) {
-            throw new AppError('Usuario sem vinculo ativo para a unidade da reserva.', 403);
+        if (isAdmin && targetReservationUserId !== userId) {
+            const targetUser = await usersRepository.findById(targetReservationUserId);
+            if (!targetUser) {
+                throw new AppError('Usuario selecionado para reserva nao encontrado.', 404);
+            }
+        }
+
+        if (!isAdmin || targetReservationUserId !== userId) {
+            const activeMembership = await hasActiveMembershipOnDate(targetReservationUserId, unitId, startAt);
+            if (!activeMembership) {
+                throw new AppError('Usuario sem vinculo ativo para a unidade da reserva.', 403);
+            }
         }
 
         try {
             const reservation = await reservationsRepository.create({
                 unitId,
                 machinePairId: pair.id,
-                userId,
+                userId: targetReservationUserId,
                 startAt: toIso(startAt),
                 endAt: toIso(endAt),
                 status: 'CONFIRMED',
@@ -90,6 +104,7 @@ export const reservationsService = {
                 entity: 'reservations',
                 entityId: reservation.id,
                 payload: {
+                    reservationUserId: reservation.user_id,
                     unitId: reservation.unit_id,
                     machinePairId: reservation.machine_pair_id,
                     startAt: reservation.start_at,

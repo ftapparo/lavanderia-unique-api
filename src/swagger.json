@@ -983,7 +983,7 @@
           "Reservas"
         ],
         "summary": "Criar reserva",
-        "description": "Cria reserva com duracao fixa de 2 horas para um par de maquinas.",
+        "description": "Cria reserva com duracao fixa de 2 horas para um par de maquinas. Para perfil ADMIN, e possivel informar userId para reservar em nome de outro usuario.",
         "security": [
           {
             "bearerAuth": []
@@ -2667,6 +2667,10 @@
               "DRYER"
             ]
           },
+          "tuyaDeviceId": {
+            "type": "string",
+            "nullable": true
+          },
           "active": {
             "type": "boolean"
           }
@@ -2800,6 +2804,11 @@
           "startAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Opcional. Quando informado por ADMIN, cria a reserva em nome do usuario selecionado."
           }
         }
       },

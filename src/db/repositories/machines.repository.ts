@@ -41,6 +41,7 @@ export const machinesRepository = {
                     m.model,
                     m.name,
                     m.type,
+                    m.tuya_device_id AS "tuyaDeviceId",
                     m.active
              FROM machines m
              WHERE m.id = $1
@@ -97,6 +98,7 @@ export const machinesRepository = {
                     m.model,
                     m.name,
                     m.type,
+                    m.tuya_device_id AS "tuyaDeviceId",
                     m.active
              FROM machines m
              ORDER BY m.number`,
@@ -115,6 +117,7 @@ export const machinesRepository = {
                     m.model,
                     m.name,
                     m.type,
+                    m.tuya_device_id AS "tuyaDeviceId",
                     m.active
              FROM machines m
              ORDER BY m.number`,

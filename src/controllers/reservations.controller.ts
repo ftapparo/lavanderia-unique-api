@@ -8,7 +8,8 @@ export const reservationsController = {
             unitId: String(req.body?.unitId || ''),
             machinePairId: String(req.body?.machinePairId || ''),
             startAt: String(req.body?.startAt || ''),
-        }, String(req.auth?.userId));
+            userId: req.body?.userId ? String(req.body.userId) : undefined,
+        }, String(req.auth?.userId), req.auth?.role === 'ADMIN');
 
         res.ok(reservation, 201);
     },

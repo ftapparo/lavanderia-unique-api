@@ -7,7 +7,7 @@ import { machinesRepository } from '../db/repositories/machines.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
 import { tuyaCommandLogsRepository } from '../db/repositories/tuya-command-logs.repository';
 import { tuyaClient } from '../integrations/tuya/tuya-client';
-import type { LaundrySessionView } from '../types/domain.types';
+import type { LaundrySessionView, MachineRecord } from '../types/domain.types';
 import { AppError } from '../utils/app-error';
 
 const isCheckinWithinWindow = (reservationStartAt: string, nowDate: Date): boolean => {
@@ -17,12 +17,29 @@ const isCheckinWithinWindow = (reservationStartAt: string, nowDate: Date): boole
     return nowDate >= windowStart && nowDate <= windowEnd;
 };
 
-const ensureTuyaDevice = (machine: { id: string; name: string; tuya_device_id: string | null }) => {
+type ControllableMachine = {
+    id: string;
+    name: string;
+    type: 'WASHER' | 'DRYER';
+    deviceId: string;
+};
+
+const toControllableMachine = (machine: MachineRecord): ControllableMachine | null => {
+    if (!machine.active) {
+        return null;
+    }
+
     const deviceId = machine.tuya_device_id?.trim();
     if (!deviceId) {
-        throw new AppError(`Maquina ${machine.name} sem tuyaDeviceId configurado.`, 400);
+        return null;
     }
-    return deviceId;
+
+    return {
+        id: machine.id,
+        name: machine.name,
+        type: machine.type,
+        deviceId,
+    };
 };
 
 const parseNumeric = (value: number | string): number => {
@@ -76,8 +93,12 @@ export const sessionsService = {
             throw new AppError('Secadora do par nao encontrada.', 404);
         }
 
-        const washerDeviceId = ensureTuyaDevice(washer);
-        const dryerDeviceId = ensureTuyaDevice(dryer);
+        const controllableMachines = [washer, dryer]
+            .map(toControllableMachine)
+            .filter((machine): machine is ControllableMachine => Boolean(machine));
+        if (controllableMachines.length === 0) {
+            throw new AppError('Nenhuma maquina ativa com tuyaDeviceId configurado no par selecionado.', 409);
+        }
 
         const existingSession = await laundrySessionsRepository.findByReservationId(reservation.id);
         if (existingSession) {
@@ -95,27 +116,18 @@ export const sessionsService = {
         });
 
         try {
-            const washerCommand = await tuyaClient.turnOn(washerDeviceId);
-            await tuyaCommandLogsRepository.create({
-                laundrySessionId: session.id,
-                reservationId: reservation.id,
-                machineId: washer.id,
-                deviceId: washerDeviceId,
-                command: 'TURN_ON',
-                success: true,
-                responsePayload: washerCommand as Record<string, unknown>,
-            });
-
-            const dryerCommand = await tuyaClient.turnOn(dryerDeviceId);
-            await tuyaCommandLogsRepository.create({
-                laundrySessionId: session.id,
-                reservationId: reservation.id,
-                machineId: dryer.id,
-                deviceId: dryerDeviceId,
-                command: 'TURN_ON',
-                success: true,
-                responsePayload: dryerCommand as Record<string, unknown>,
-            });
+            for (const machine of controllableMachines) {
+                const commandResult = await tuyaClient.turnOn(machine.deviceId);
+                await tuyaCommandLogsRepository.create({
+                    laundrySessionId: session.id,
+                    reservationId: reservation.id,
+                    machineId: machine.id,
+                    deviceId: machine.deviceId,
+                    command: 'TURN_ON',
+                    success: true,
+                    responsePayload: commandResult as Record<string, unknown>,
+                });
+            }
         } catch (error) {
             await tuyaCommandLogsRepository.create({
                 laundrySessionId: session.id,
@@ -147,6 +159,8 @@ export const sessionsService = {
                 reservationId: reservation.id,
                 machinePairId: reservation.machine_pair_id,
                 checkinAt: session.checkin_at,
+                controlledMachinesCount: controllableMachines.length,
+                controlledMachineIds: controllableMachines.map((machine) => machine.id),
             },
         });
 
@@ -184,40 +198,31 @@ export const sessionsService = {
             throw new AppError('Maquinas da sessao nao encontradas.', 404);
         }
 
-        const washerDeviceId = ensureTuyaDevice(washer);
-        const dryerDeviceId = ensureTuyaDevice(dryer);
+        const controllableMachines = [washer, dryer]
+            .map(toControllableMachine)
+            .filter((machine): machine is ControllableMachine => Boolean(machine));
 
-        const [washerStatus, dryerStatus, washerConsumption, dryerConsumption] = await Promise.all([
-            tuyaClient.getStatus(washerDeviceId),
-            tuyaClient.getStatus(dryerDeviceId),
-            tuyaClient.getConsumption(washerDeviceId),
-            tuyaClient.getConsumption(dryerDeviceId),
-        ]);
+        const devices = await Promise.all(controllableMachines.map(async (machine) => {
+            const [status, consumption] = await Promise.all([
+                tuyaClient.getStatus(machine.deviceId),
+                tuyaClient.getConsumption(machine.deviceId),
+            ]);
+
+            return {
+                machineId: machine.id,
+                machineName: machine.name,
+                machineType: machine.type,
+                deviceId: machine.deviceId,
+                isOn: status.isOn,
+                powerWatts: consumption.powerWatts,
+                energyKwh: consumption.energyKwh,
+                sampledAt: consumption.sampledAt,
+            };
+        }));
 
         return {
             ...sessionView,
-            devices: [
-                {
-                    machineId: washer.id,
-                    machineName: washer.name,
-                    machineType: washer.type,
-                    deviceId: washerDeviceId,
-                    isOn: washerStatus.isOn,
-                    powerWatts: washerConsumption.powerWatts,
-                    energyKwh: washerConsumption.energyKwh,
-                    sampledAt: washerConsumption.sampledAt,
-                },
-                {
-                    machineId: dryer.id,
-                    machineName: dryer.name,
-                    machineType: dryer.type,
-                    deviceId: dryerDeviceId,
-                    isOn: dryerStatus.isOn,
-                    powerWatts: dryerConsumption.powerWatts,
-                    energyKwh: dryerConsumption.energyKwh,
-                    sampledAt: dryerConsumption.sampledAt,
-                },
-            ],
+            devices,
         };
     },
 
@@ -246,51 +251,31 @@ export const sessionsService = {
             throw new AppError('Maquinas da sessao nao encontradas.', 404);
         }
 
-        const washerDeviceId = ensureTuyaDevice(washer);
-        const dryerDeviceId = ensureTuyaDevice(dryer);
+        const controllableMachines = [washer, dryer]
+            .map(toControllableMachine)
+            .filter((machine): machine is ControllableMachine => Boolean(machine));
 
-        const [washerConsumption, dryerConsumption] = await Promise.all([
-            tuyaClient.getConsumption(washerDeviceId),
-            tuyaClient.getConsumption(dryerDeviceId),
-        ]);
+        for (const machine of controllableMachines) {
+            const consumption = await tuyaClient.getConsumption(machine.deviceId);
+            await consumptionSamplesRepository.create({
+                laundrySessionId: session.id,
+                machineId: machine.id,
+                sampleAt: consumption.sampledAt,
+                powerWatts: parseNumeric(consumption.powerWatts),
+                energyKwh: parseNumeric(consumption.energyKwh),
+            });
 
-        await consumptionSamplesRepository.create({
-            laundrySessionId: session.id,
-            machineId: washer.id,
-            sampleAt: washerConsumption.sampledAt,
-            powerWatts: parseNumeric(washerConsumption.powerWatts),
-            energyKwh: parseNumeric(washerConsumption.energyKwh),
-        });
-
-        await consumptionSamplesRepository.create({
-            laundrySessionId: session.id,
-            machineId: dryer.id,
-            sampleAt: dryerConsumption.sampledAt,
-            powerWatts: parseNumeric(dryerConsumption.powerWatts),
-            energyKwh: parseNumeric(dryerConsumption.energyKwh),
-        });
-
-        const washerOffResult = await tuyaClient.turnOff(washerDeviceId);
-        await tuyaCommandLogsRepository.create({
-            laundrySessionId: session.id,
-            reservationId: session.reservation_id,
-            machineId: washer.id,
-            deviceId: washerDeviceId,
-            command: 'TURN_OFF',
-            success: true,
-            responsePayload: washerOffResult as Record<string, unknown>,
-        });
-
-        const dryerOffResult = await tuyaClient.turnOff(dryerDeviceId);
-        await tuyaCommandLogsRepository.create({
-            laundrySessionId: session.id,
-            reservationId: session.reservation_id,
-            machineId: dryer.id,
-            deviceId: dryerDeviceId,
-            command: 'TURN_OFF',
-            success: true,
-            responsePayload: dryerOffResult as Record<string, unknown>,
-        });
+            const turnOffResult = await tuyaClient.turnOff(machine.deviceId);
+            await tuyaCommandLogsRepository.create({
+                laundrySessionId: session.id,
+                reservationId: session.reservation_id,
+                machineId: machine.id,
+                deviceId: machine.deviceId,
+                command: 'TURN_OFF',
+                success: true,
+                responsePayload: turnOffResult as Record<string, unknown>,
+            });
+        }
 
         await laundrySessionsRepository.updateStatus({
             id: session.id,
