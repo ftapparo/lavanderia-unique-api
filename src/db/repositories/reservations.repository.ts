@@ -50,6 +50,19 @@ export const reservationsRepository = {
         return result.rows[0] || null;
     },
 
+    async updateStatus(id: string, status: ReservationRecord['status']): Promise<ReservationRecord | null> {
+        const result = await db.query<ReservationRecord>(
+            `UPDATE reservations
+             SET status = $2,
+                 updated_at = NOW()
+             WHERE id = $1
+             RETURNING id, unit_id, machine_pair_id, user_id, start_at, end_at, status, canceled_at, canceled_by_user_id, created_at, updated_at`,
+            [id, status],
+        );
+
+        return result.rows[0] || null;
+    },
+
     async listAll(): Promise<ReservationView[]> {
         const result = await db.query<ReservationView>(
             `SELECT r.id,

@@ -8,5 +8,6 @@ const router = express.Router();
 router.get('/reservations', authMiddleware, asyncHandler(reservationsController.list));
 router.post('/reservations', authMiddleware, asyncHandler(reservationsController.create));
 router.post('/reservations/:id/cancel', authMiddleware, asyncHandler(reservationsController.cancel));
+router.post('/reservations/:id/check-in', authMiddleware, asyncHandler(reservationsController.checkin));
 
 export default router;

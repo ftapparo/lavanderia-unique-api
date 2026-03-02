@@ -7,6 +7,7 @@ import machinesRoutes from './machines.routes';
 import machinePairsRoutes from './machine-pairs.routes';
 import reservationsRoutes from './reservations.routes';
 import usersRoutes from './users.routes';
+import sessionsRoutes from './sessions.routes';
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use(machinesRoutes);
 router.use(machinePairsRoutes);
 router.use(reservationsRoutes);
 router.use(usersRoutes);
+router.use(sessionsRoutes);
 
 export default router;

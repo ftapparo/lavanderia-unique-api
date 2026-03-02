@@ -150,3 +150,65 @@ export type ReservationView = {
     status: ReservationStatus;
     canceledAt: string | null;
 };
+
+export type LaundrySessionStatus = 'ACTIVE' | 'FINISHED' | 'FORCED_FINISHED';
+
+export type LaundrySessionRecord = {
+    id: string;
+    reservation_id: string;
+    unit_id: string;
+    machine_pair_id: string;
+    user_id: string;
+    checkin_at: string;
+    started_at: string;
+    finished_at: string | null;
+    status: LaundrySessionStatus;
+    overtime_started_at: string | null;
+    overtime_ended_at: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+export type LaundrySessionView = {
+    id: string;
+    reservationId: string;
+    reservationStartAt: string;
+    reservationEndAt: string;
+    unitId: string;
+    unitName: string;
+    unitCode: string;
+    machinePairId: string;
+    machinePairName: string;
+    userId: string;
+    userName: string;
+    checkinAt: string;
+    startedAt: string;
+    finishedAt: string | null;
+    status: LaundrySessionStatus;
+    overtimeStartedAt: string | null;
+    overtimeEndedAt: string | null;
+};
+
+export type ConsumptionSampleRecord = {
+    id: string;
+    laundry_session_id: string;
+    machine_id: string;
+    sample_at: string;
+    power_watts: string;
+    energy_kwh: string;
+    created_at: string;
+};
+
+export type TuyaCommandLogRecord = {
+    id: string;
+    laundry_session_id: string | null;
+    reservation_id: string | null;
+    machine_id: string | null;
+    device_id: string;
+    command: string;
+    success: boolean;
+    request_payload: Record<string, unknown>;
+    response_payload: Record<string, unknown>;
+    error_message: string | null;
+    created_at: string;
+};
