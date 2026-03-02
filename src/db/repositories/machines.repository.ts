@@ -31,6 +31,25 @@ export const machinesRepository = {
         return result.rows[0];
     },
 
+    async findViewById(id: string): Promise<MachineView | null> {
+        const result = await db.query<MachineView>(
+            `SELECT m.id,
+                    m.unit_id AS "unitId",
+                    u.name AS "unitName",
+                    u.code AS "unitCode",
+                    m.name,
+                    m.type,
+                    m.active
+             FROM machines m
+             INNER JOIN units u ON u.id = m.unit_id
+             WHERE m.id = $1
+             LIMIT 1`,
+            [id],
+        );
+
+        return result.rows[0] || null;
+    },
+
     async listAll(): Promise<MachineView[]> {
         const result = await db.query<MachineView>(
             `SELECT m.id,

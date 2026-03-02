@@ -9,7 +9,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "dotenv -e .env -- cross-env NODE_ENV=development ts-node-dev --respawn src/server.ts",
-    "migrate": "dotenv -e .env -- ts-node-dev --respawn --transpile-only src/db/run-migrations.ts",
+    "migrate": "dotenv -e .env -- ts-node --transpile-only src/db/run-migrations.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
