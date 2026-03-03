@@ -1,9 +1,15 @@
 import type { Request, Response } from 'express';
 import { membershipsService } from '../services/memberships.service';
+import { hasAdminAccess } from '../utils/auth-role';
 
 export const membershipsController = {
+    async listProfiles(_req: Request, res: Response) {
+        const rows = await membershipsService.listProfiles();
+        res.ok(rows);
+    },
+
     async list(req: Request, res: Response) {
-        const rows = await membershipsService.list(String(req.auth?.userId), req.auth?.role === 'ADMIN');
+        const rows = await membershipsService.list(String(req.auth?.userId), hasAdminAccess(req.auth?.role));
         res.ok(rows);
     },
 

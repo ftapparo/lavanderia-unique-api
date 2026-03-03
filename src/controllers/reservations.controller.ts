@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { reservationsService } from '../services/reservations.service';
 import { sessionsService } from '../services/sessions.service';
+import { hasAdminAccess } from '../utils/auth-role';
 
 export const reservationsController = {
     async create(req: Request, res: Response) {
@@ -9,13 +10,18 @@ export const reservationsController = {
             machinePairId: String(req.body?.machinePairId || ''),
             startAt: String(req.body?.startAt || ''),
             userId: req.body?.userId ? String(req.body.userId) : undefined,
-        }, String(req.auth?.userId), req.auth?.role === 'ADMIN');
+        }, String(req.auth?.userId), hasAdminAccess(req.auth?.role));
 
         res.ok(reservation, 201);
     },
 
     async list(req: Request, res: Response) {
-        const rows = await reservationsService.list(String(req.auth?.userId), req.auth?.role === 'ADMIN');
+        const rows = await reservationsService.list(String(req.auth?.userId), hasAdminAccess(req.auth?.role));
+        res.ok(rows);
+    },
+
+    async listBusy(_req: Request, res: Response) {
+        const rows = await reservationsService.listBusy();
         res.ok(rows);
     },
 
@@ -23,7 +29,7 @@ export const reservationsController = {
         const reservation = await reservationsService.cancel(
             String(req.params.id || ''),
             String(req.auth?.userId),
-            req.auth?.role === 'ADMIN',
+            hasAdminAccess(req.auth?.role),
         );
         res.ok(reservation);
     },
@@ -32,7 +38,7 @@ export const reservationsController = {
         const session = await sessionsService.checkinReservation(
             String(req.params.id || ''),
             String(req.auth?.userId),
-            req.auth?.role === 'ADMIN',
+            hasAdminAccess(req.auth?.role),
         );
         res.ok(session);
     },

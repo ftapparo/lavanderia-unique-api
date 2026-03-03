@@ -7,7 +7,7 @@ type SeedUser = {
     cpf: string;
     email: string;
     phone: string;
-    role: 'ADMIN' | 'USER';
+    role: 'ADMIN' | 'USER' | 'SUPER';
     password: string;
 };
 
@@ -18,15 +18,69 @@ const DEV_USERS: SeedUser[] = [
         cpf: '00000000191',
         email: 'admin@unique.local',
         phone: '11999990001',
-        role: 'ADMIN',
+        role: 'SUPER',
         password: 'Admin@123',
     },
     {
         id: '00000000-0000-4000-8000-000000000002',
-        name: 'Morador Teste',
+        name: 'Morador A',
         cpf: '00000000272',
-        email: 'morador@unique.local',
+        email: 'morador.a@unique.local',
         phone: '11999990002',
+        role: 'USER',
+        password: 'User@123',
+    },
+    {
+        id: '00000000-0000-4000-8000-000000000003',
+        name: 'Morador B',
+        cpf: '00000000353',
+        email: 'morador.b@unique.local',
+        phone: '11999990003',
+        role: 'USER',
+        password: 'User@123',
+    },
+    {
+        id: '00000000-0000-4000-8000-000000000004',
+        name: 'Morador C',
+        cpf: '00000000434',
+        email: 'morador.c@unique.local',
+        phone: '11999990004',
+        role: 'USER',
+        password: 'User@123',
+    },
+    {
+        id: '00000000-0000-4000-8000-000000000005',
+        name: 'Morador D',
+        cpf: '00000000515',
+        email: 'morador.d@unique.local',
+        phone: '11999990005',
+        role: 'USER',
+        password: 'User@123',
+    },
+    {
+        id: '00000000-0000-4000-8000-000000000006',
+        name: 'Morador E',
+        cpf: '00000000604',
+        email: 'morador.e@unique.local',
+        phone: '11999990006',
+        role: 'USER',
+        password: 'User@123',
+    },
+    {
+        id: '00000000-0000-4000-8000-000000000007',
+        name: 'Morador F',
+        cpf: '00000000795',
+        email: 'morador.f@unique.local',
+        phone: '11999990007',
+        role: 'USER',
+        password: 'User@123',
+    },
+    {
+        id: '00000000-0000-4000-8000-000000000008',
+        name: 'Morador G',
+        cpf: '00000000876',
+        email: 'morador.g@unique.local',
+        phone: '11999990008',
         role: 'USER',
         password: 'User@123',
     },
@@ -36,6 +90,28 @@ const DEV_UNITS = [
     { id: '10000000-0000-4000-8000-000000000001', code: '1', floor: 0, unitNumber: 1, active: true },
     { id: '10000000-0000-4000-8000-000000000002', code: '2', floor: 0, unitNumber: 2, active: true },
     { id: '10000000-0000-4000-8000-000000000003', code: '3', floor: 1, unitNumber: 1, active: true },
+    { id: '10000000-0000-4000-8000-000000000004', code: '4', floor: 1, unitNumber: 2, active: true },
+    { id: '10000000-0000-4000-8000-000000000005', code: '5', floor: 2, unitNumber: 1, active: true },
+    { id: '10000000-0000-4000-8000-000000000006', code: '6', floor: 2, unitNumber: 2, active: true },
+    { id: '10000000-0000-4000-8000-000000000007', code: '7', floor: 3, unitNumber: 1, active: true },
+    { id: '10000000-0000-4000-8000-000000000008', code: '8', floor: 3, unitNumber: 2, active: true },
+    { id: '10000000-0000-4000-8000-000000000009', code: '9', floor: 4, unitNumber: 1, active: true },
+    { id: '10000000-0000-4000-8000-000000000010', code: '10', floor: 4, unitNumber: 2, active: true },
+];
+
+const DEV_MEMBERSHIPS: Array<{ userId: string; unitId: string; profile: 'PROPRIETARIO' }> = [
+    { userId: '00000000-0000-4000-8000-000000000002', unitId: '10000000-0000-4000-8000-000000000001', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000002', unitId: '10000000-0000-4000-8000-000000000002', profile: 'PROPRIETARIO' },
+
+    { userId: '00000000-0000-4000-8000-000000000003', unitId: '10000000-0000-4000-8000-000000000003', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000003', unitId: '10000000-0000-4000-8000-000000000004', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000003', unitId: '10000000-0000-4000-8000-000000000005', profile: 'PROPRIETARIO' },
+
+    { userId: '00000000-0000-4000-8000-000000000004', unitId: '10000000-0000-4000-8000-000000000006', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000005', unitId: '10000000-0000-4000-8000-000000000007', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000006', unitId: '10000000-0000-4000-8000-000000000008', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000007', unitId: '10000000-0000-4000-8000-000000000009', profile: 'PROPRIETARIO' },
+    { userId: '00000000-0000-4000-8000-000000000008', unitId: '10000000-0000-4000-8000-000000000010', profile: 'PROPRIETARIO' },
 ];
 
 const DEV_MACHINES = [
@@ -60,9 +136,10 @@ export async function runDevSeed(): Promise<void> {
             await client.query(
                 `INSERT INTO users (id, name, cpf, email, phone, password_hash, role)
                  VALUES ($1, $2, $3, $4, $5, $6, $7)
-                 ON CONFLICT (email) DO UPDATE
+                 ON CONFLICT (id) DO UPDATE
                  SET name = EXCLUDED.name,
                      cpf = EXCLUDED.cpf,
+                     email = EXCLUDED.email,
                      phone = EXCLUDED.phone,
                      password_hash = EXCLUDED.password_hash,
                      role = EXCLUDED.role,
@@ -85,20 +162,17 @@ export async function runDevSeed(): Promise<void> {
             );
         }
 
-        const moradorId = DEV_USERS[1].id;
-        for (const unit of DEV_UNITS) {
+        const residentUserIds = DEV_USERS.filter((user) => user.role === 'USER').map((user) => user.id);
+        await client.query(
+            `DELETE FROM unit_memberships WHERE user_id = ANY($1::uuid[])`,
+            [residentUserIds],
+        );
+
+        for (const membership of DEV_MEMBERSHIPS) {
             await client.query(
                 `INSERT INTO unit_memberships (user_id, unit_id, profile, start_date, end_date, active)
-                 SELECT $1, $2, 'MORADOR', CURRENT_DATE - INTERVAL '30 day', NULL, true
-                 WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM unit_memberships
-                    WHERE user_id = $1
-                      AND unit_id = $2
-                      AND profile = 'MORADOR'
-                      AND end_date IS NULL
-                 )`,
-                [moradorId, unit.id],
+                 VALUES ($1, $2, $3, CURRENT_DATE - INTERVAL '30 day', NULL, true)`,
+                [membership.userId, membership.unitId, membership.profile],
             );
         }
 

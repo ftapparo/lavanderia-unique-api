@@ -1,9 +1,10 @@
 import type { Request, Response } from 'express';
 import { unitsService } from '../services/units.service';
+import { hasAdminAccess } from '../utils/auth-role';
 
 export const unitsController = {
     async list(req: Request, res: Response) {
-        const rows = await unitsService.list(String(req.auth?.userId), req.auth?.role === 'ADMIN');
+        const rows = await unitsService.list(String(req.auth?.userId), hasAdminAccess(req.auth?.role));
         res.ok(rows);
     },
 
@@ -12,6 +13,9 @@ export const unitsController = {
             floor: Number(req.body?.floor),
             unitNumber: Number(req.body?.unitNumber),
             active: typeof req.body?.active === 'boolean' ? req.body.active : undefined,
+            allowGuestReservations: typeof req.body?.allowGuestReservations === 'boolean'
+                ? req.body.allowGuestReservations
+                : undefined,
         }, String(req.auth?.userId));
 
         res.ok(unit, 201);
@@ -22,6 +26,9 @@ export const unitsController = {
             floor: typeof req.body?.floor === 'number' ? Number(req.body.floor) : undefined,
             unitNumber: typeof req.body?.unitNumber === 'number' ? Number(req.body.unitNumber) : undefined,
             active: typeof req.body?.active === 'boolean' ? req.body.active : undefined,
+            allowGuestReservations: typeof req.body?.allowGuestReservations === 'boolean'
+                ? req.body.allowGuestReservations
+                : undefined,
         }, String(req.auth?.userId));
 
         res.ok(unit);

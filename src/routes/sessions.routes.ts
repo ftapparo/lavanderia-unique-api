@@ -5,6 +5,7 @@ import { sessionsController } from '../controllers/sessions.controller';
 
 const router = express.Router();
 
+router.get('/sessions/by-reservation/:reservationId', authMiddleware, asyncHandler(sessionsController.getByReservationId));
 router.get('/sessions/:id', authMiddleware, asyncHandler(sessionsController.getById));
 router.post('/sessions/:id/finish', authMiddleware, asyncHandler(sessionsController.finish));
 

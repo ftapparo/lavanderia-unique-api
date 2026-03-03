@@ -4,6 +4,9 @@ import { usersRepository } from '../db/repositories/users.repository';
 import { auditLogsRepository } from '../db/repositories/audit-logs.repository';
 import { AppError } from '../utils/app-error';
 
+const MEMBERSHIP_PROFILES = ['PROPRIETARIO', 'LOCATARIO', 'HOSPEDE', 'ADMINISTRADOR', 'SUPER'] as const;
+type MembershipProfile = typeof MEMBERSHIP_PROFILES[number];
+
 const validateDateRange = (startDate: string, endDate?: string | null): void => {
     if (!startDate) {
         throw new AppError('Data de inicio obrigatoria.', 400);
@@ -14,7 +17,22 @@ const validateDateRange = (startDate: string, endDate?: string | null): void => 
     }
 };
 
+const normalizeProfile = (inputProfile: string): MembershipProfile => {
+    const profile = inputProfile.trim().toUpperCase();
+    if (!profile) {
+        throw new AppError('Perfil de vinculo obrigatorio.', 400);
+    }
+    if (!MEMBERSHIP_PROFILES.includes(profile as MembershipProfile)) {
+        throw new AppError('Perfil de vinculo invalido.', 400, { allowed: MEMBERSHIP_PROFILES });
+    }
+    return profile as MembershipProfile;
+};
+
 export const membershipsService = {
+    async listProfiles() {
+        return membershipsRepository.listProfiles();
+    },
+
     async create(input: {
         userId: string;
         unitId: string;
@@ -35,9 +53,26 @@ export const membershipsService = {
             throw new AppError('Unidade nao encontrada.', 404);
         }
 
-        const profile = input.profile.trim();
-        if (!profile) {
-            throw new AppError('Perfil de vinculo obrigatorio.', 400);
+        const profile = normalizeProfile(input.profile);
+        const profileExists = await membershipsRepository.profileExists(profile);
+        if (!profileExists) {
+            throw new AppError('Perfil de vinculo nao cadastrado.', 400);
+        }
+
+        if (profile === 'HOSPEDE' && !input.endDate) {
+            throw new AppError('Perfil HOSPEDE exige data final.', 400);
+        }
+
+        if (profile === 'LOCATARIO') {
+            const hasConflict = await membershipsRepository.hasOverlappingLocatarioForUser({
+                userId: input.userId,
+                unitId: input.unitId,
+                startDate: input.startDate,
+                endDate: input.endDate,
+            });
+            if (hasConflict) {
+                throw new AppError('Locatario pode ocupar apenas uma unidade por periodo.', 409);
+            }
         }
 
         const membership = await membershipsRepository.create({
@@ -77,9 +112,32 @@ export const membershipsService = {
             throw new AppError('Vinculo nao encontrado.', 404);
         }
 
-        validateDateRange(input.startDate ?? existing.start_date, input.endDate ?? existing.end_date);
+        const nextStartDate = input.startDate ?? existing.start_date;
+        const nextEndDate = input.endDate ?? existing.end_date;
+        const nextProfile = input.profile ? normalizeProfile(input.profile) : (existing.profile as MembershipProfile);
+        validateDateRange(nextStartDate, nextEndDate);
 
-        const updated = await membershipsRepository.update(id, input);
+        if (nextProfile === 'HOSPEDE' && !nextEndDate) {
+            throw new AppError('Perfil HOSPEDE exige data final.', 400);
+        }
+
+        if (nextProfile === 'LOCATARIO') {
+            const hasConflict = await membershipsRepository.hasOverlappingLocatarioForUser({
+                userId: existing.user_id,
+                unitId: existing.unit_id,
+                startDate: nextStartDate,
+                endDate: nextEndDate,
+                excludeMembershipId: existing.id,
+            });
+            if (hasConflict) {
+                throw new AppError('Locatario pode ocupar apenas uma unidade por periodo.', 409);
+            }
+        }
+
+        const updated = await membershipsRepository.update(id, {
+            ...input,
+            profile: nextProfile,
+        });
         if (!updated) {
             throw new AppError('Falha ao atualizar vinculo.', 500);
         }

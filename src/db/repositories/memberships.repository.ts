@@ -1,5 +1,5 @@
 import { db } from '../pool';
-import type { MembershipView, UnitMembershipRecord } from '../../types/domain.types';
+import type { MembershipProfileView, MembershipView, UnitMembershipRecord } from '../../types/domain.types';
 
 type CreateMembershipInput = {
     userId: string;
@@ -18,6 +18,24 @@ type UpdateMembershipInput = {
 };
 
 export const membershipsRepository = {
+    async listProfiles(): Promise<MembershipProfileView[]> {
+        const result = await db.query<MembershipProfileView>(
+            `SELECT code, name, description
+             FROM membership_profiles
+             ORDER BY code ASC`,
+            [],
+        );
+        return result.rows;
+    },
+
+    async profileExists(profileCode: string): Promise<boolean> {
+        const result = await db.query<{ code: string }>(
+            `SELECT code FROM membership_profiles WHERE code = $1 LIMIT 1`,
+            [profileCode],
+        );
+        return Boolean(result.rows[0]);
+    },
+
     async create(input: CreateMembershipInput): Promise<UnitMembershipRecord> {
         const result = await db.query<UnitMembershipRecord>(
             `INSERT INTO unit_memberships (user_id, unit_id, profile, start_date, end_date, active)
@@ -109,7 +127,75 @@ export const membershipsRepository = {
              LIMIT 1`,
             [userId, unitId, dateIso],
         );
+        const membership = result.rows[0] || null;
+        if (!membership) {
+            return null;
+        }
 
-        return result.rows[0] || null;
+        if (membership.profile === 'PROPRIETARIO') {
+            const tenant = await db.query<{ id: string }>(
+                `SELECT id
+                 FROM unit_memberships
+                 WHERE unit_id = $1
+                   AND profile = 'LOCATARIO'
+                   AND active = true
+                   AND start_date <= $2::date
+                   AND (end_date IS NULL OR end_date >= $2::date)
+                 LIMIT 1`,
+                [unitId, dateIso],
+            );
+
+            if (tenant.rows[0]) {
+                return null;
+            }
+        }
+
+        return membership;
+    },
+
+    async hasOverlappingLocatarioForUser(input: {
+        userId: string;
+        unitId: string;
+        startDate: string;
+        endDate?: string | null;
+        excludeMembershipId?: string;
+    }): Promise<boolean> {
+        const result = await db.query<{ id: string }>(
+            `SELECT id
+             FROM unit_memberships
+             WHERE user_id = $1
+               AND profile = 'LOCATARIO'
+               AND active = true
+               AND unit_id <> $2
+               AND ($3::date <= COALESCE(end_date, '9999-12-31'::date))
+               AND (COALESCE($4::date, '9999-12-31'::date) >= start_date)
+               AND ($5::uuid IS NULL OR id <> $5::uuid)
+             LIMIT 1`,
+            [input.userId, input.unitId, input.startDate, input.endDate ?? null, input.excludeMembershipId ?? null],
+        );
+
+        return Boolean(result.rows[0]);
+    },
+
+    async hasAnyProfileByUserAndUnitOnDate(input: {
+        userId: string;
+        unitId: string;
+        dateIso: string;
+        profiles: string[];
+    }): Promise<boolean> {
+        const result = await db.query<{ id: string }>(
+            `SELECT id
+             FROM unit_memberships
+             WHERE user_id = $1
+               AND unit_id = $2
+               AND active = true
+               AND profile = ANY($3::text[])
+               AND start_date <= $4::date
+               AND (end_date IS NULL OR end_date >= $4::date)
+             LIMIT 1`,
+            [input.userId, input.unitId, input.profiles, input.dateIso],
+        );
+
+        return Boolean(result.rows[0]);
     },
 };

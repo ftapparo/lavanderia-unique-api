@@ -6,7 +6,8 @@ export const requireRole = (...roles: string[]) => (req: Request, res: Response,
         return;
     }
 
-    if (!roles.includes(req.auth.role)) {
+    const normalizedRoles = req.auth.role === 'SUPER' ? [...roles, 'ADMIN', 'SUPER'] : roles;
+    if (!normalizedRoles.includes(req.auth.role)) {
         res.fail('Acesso negado.', 403);
         return;
     }

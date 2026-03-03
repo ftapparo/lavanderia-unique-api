@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { StartWebServer } from './api/web-server.api';
+import { opsJobsService } from './services/ops-jobs.service';
 
 const dotenvResult = dotenv.config();
 if (dotenvResult.error) {
@@ -16,6 +17,7 @@ if (dotenvResult.error) {
 async function StartService(): Promise<void> {
     try {
         await StartWebServer();
+        opsJobsService.start();
         console.log('[Server] Servico web inicializado.');
     } catch (err) {
         console.error('[Server] Erro ao inicializar:', err);

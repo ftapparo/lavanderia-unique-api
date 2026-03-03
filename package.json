@@ -18,13 +18,17 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@types/nodemailer": "^6.4.23",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "dotenv": "^16.5.0",
     "dotenv-cli": "^8.0.0",
     "express": "^4.21.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.10.1",
     "pg": "^8.16.3",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/cors": "^2",

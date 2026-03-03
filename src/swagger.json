@@ -46,6 +46,22 @@
     {
       "name": "Sessoes",
       "description": "Endpoints para check-in e controle de sessoes de lavanderia."
+    },
+    {
+      "name": "Ocorrencias",
+      "description": "Endpoints para consulta de ocorrencias operacionais da lavanderia."
+    },
+    {
+      "name": "Configuracoes do Sistema",
+      "description": "Endpoints para consulta e atualizacao de parametros operacionais."
+    },
+    {
+      "name": "Cobranca",
+      "description": "Endpoints para execucao e consulta de faturamento."
+    },
+    {
+      "name": "Admin",
+      "description": "Endpoints administrativos de visao consolidada."
     }
   ],
   "paths": {
@@ -2248,6 +2264,729 @@
           }
         }
       }
+    },
+    "/v1/api/incidents": {
+      "get": {
+        "tags": [
+          "Ocorrencias"
+        ],
+        "summary": "Listar ocorrencias",
+        "description": "Retorna ocorrencias operacionais. Admin visualiza todas; usuario comum visualiza apenas as proprias.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ocorrencias retornadas com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseIncidents"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/settings": {
+      "get": {
+        "tags": [
+          "Configuracoes do Sistema"
+        ],
+        "summary": "Consultar configuracoes operacionais",
+        "description": "Retorna parametros de check-in, overtime, polling e cobranca.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuracoes retornadas com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSystemSettings"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Configuracoes do Sistema"
+        ],
+        "summary": "Atualizar configuracoes operacionais",
+        "description": "Atualiza parametros operacionais do sistema. Endpoint restrito a administradores.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSystemSettingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuracoes atualizadas com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseSystemSettings"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados invalidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/billing/run": {
+      "post": {
+        "tags": [
+          "Cobranca"
+        ],
+        "summary": "Executar fechamento de cobranca",
+        "description": "Executa consolidacao mensal de cobranca para a competencia informada.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fechamento executado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBillingRunResult"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Competencia invalida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/invoices": {
+      "get": {
+        "tags": [
+          "Cobranca"
+        ],
+        "summary": "Listar faturas",
+        "description": "Retorna faturas geradas. Admin visualiza todas; usuario comum visualiza as proprias.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Faturas retornadas com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseInvoices"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/invoices/{id}": {
+      "get": {
+        "tags": [
+          "Cobranca"
+        ],
+        "summary": "Consultar fatura por id",
+        "description": "Retorna os detalhes de uma fatura com seus itens.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Identificador da fatura."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fatura retornada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseInvoiceDetails"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "404": {
+            "description": "Fatura nao encontrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/billing/exports/{competence}": {
+      "get": {
+        "tags": [
+          "Cobranca"
+        ],
+        "summary": "Exportar cobranca por competencia",
+        "description": "Gera exportacao de cobranca para a competencia informada. Suporta formatos CSV e XLSX via query ?format=csv|xlsx.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "competence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "2026-03"
+            },
+            "description": "Competencia no formato YYYY-MM."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "csv",
+                "xlsx"
+              ],
+              "default": "csv"
+            },
+            "description": "Formato de exportacao."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo de exportacao gerado com sucesso.",
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/admin/dashboard": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Consultar dashboard administrativo",
+        "description": "Retorna indicadores consolidados de reservas, sessoes, ocorrencias e faturas.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicadores retornados com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminDashboard"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/reservations/busy": {
+      "get": {
+        "tags": [
+          "Reservas"
+        ],
+        "summary": "Listar ocupacao dos pares",
+        "description": "Retorna os intervalos ocupados dos pares de maquinas para calculo de disponibilidade no calendario.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de ocupacao retornada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseReservationBusyList"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/membership-profiles": {
+      "get": {
+        "tags": [
+          "Vinculos de Unidade"
+        ],
+        "summary": "Listar perfis de vinculo",
+        "description": "Retorna os perfis permitidos para vinculo entre usuario e unidade.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfis retornados com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMembershipProfiles"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/sessions/by-reservation/{reservationId}": {
+      "get": {
+        "tags": [
+          "Sessoes"
+        ],
+        "summary": "Obter sessao por reserva",
+        "description": "Retorna a sessao associada a uma reserva especifica.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da reserva.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessao retornada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLaundrySession"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2357,6 +3096,9 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "allowGuestReservations": {
+            "type": "boolean"
           }
         }
       },
@@ -2379,7 +3121,14 @@
             "type": "string"
           },
           "profile": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "PROPRIETARIO",
+              "LOCATARIO",
+              "HOSPEDE",
+              "ADMINISTRADOR",
+              "SUPER"
+            ]
           },
           "startDate": {
             "type": "string"
@@ -2460,6 +3209,9 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "allowGuestReservations": {
+            "type": "boolean"
           }
         }
       },
@@ -2479,7 +3231,14 @@
             "type": "string"
           },
           "profile": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "PROPRIETARIO",
+              "LOCATARIO",
+              "HOSPEDE",
+              "ADMINISTRADOR",
+              "SUPER"
+            ]
           },
           "startDate": {
             "type": "string",
@@ -2499,7 +3258,14 @@
         "type": "object",
         "properties": {
           "profile": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "PROPRIETARIO",
+              "LOCATARIO",
+              "HOSPEDE",
+              "ADMINISTRADOR",
+              "SUPER"
+            ]
           },
           "startDate": {
             "type": "string",
@@ -2956,6 +3722,9 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "allowGuestReservations": {
+            "type": "boolean"
           }
         }
       },
@@ -3191,6 +3960,476 @@
             "properties": {
               "data": {
                 "$ref": "#/components/schemas/LaundrySessionWithDevices"
+              }
+            }
+          }
+        ]
+      },
+      "Incident": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "NO_SHOW",
+              "OVERTIME",
+              "FORCED_SHUTDOWN",
+              "TUYA_ERROR"
+            ]
+          },
+          "reservationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "laundrySessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "unitId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "unitName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SystemSettings": {
+        "type": "object",
+        "properties": {
+          "checkinWindowBeforeMinutes": {
+            "type": "integer"
+          },
+          "checkinWindowAfterMinutes": {
+            "type": "integer"
+          },
+          "overtimeThresholdWatts": {
+            "type": "number"
+          },
+          "consumptionPollSeconds": {
+            "type": "integer"
+          },
+          "billingMode": {
+            "type": "string",
+            "enum": [
+              "PER_USE",
+              "PER_KWH"
+            ]
+          },
+          "pricePerUse": {
+            "type": "number"
+          },
+          "pricePerKwh": {
+            "type": "number"
+          },
+          "updatedByUserId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UpdateSystemSettingsRequest": {
+        "type": "object",
+        "properties": {
+          "checkinWindowBeforeMinutes": {
+            "type": "integer"
+          },
+          "checkinWindowAfterMinutes": {
+            "type": "integer"
+          },
+          "overtimeThresholdWatts": {
+            "type": "number"
+          },
+          "consumptionPollSeconds": {
+            "type": "integer"
+          },
+          "billingMode": {
+            "type": "string",
+            "enum": [
+              "PER_USE",
+              "PER_KWH"
+            ]
+          },
+          "pricePerUse": {
+            "type": "number"
+          },
+          "pricePerKwh": {
+            "type": "number"
+          }
+        }
+      },
+      "BillingRunRequest": {
+        "type": "object",
+        "properties": {
+          "competence": {
+            "type": "string",
+            "example": "2026-03",
+            "description": "Competencia no formato YYYY-MM."
+          }
+        }
+      },
+      "BillingRunResult": {
+        "type": "object",
+        "properties": {
+          "competence": {
+            "type": "string"
+          },
+          "billingMode": {
+            "type": "string",
+            "enum": [
+              "PER_USE",
+              "PER_KWH"
+            ]
+          },
+          "invoicesCreated": {
+            "type": "integer"
+          },
+          "itemsCreated": {
+            "type": "integer"
+          },
+          "totalAmount": {
+            "type": "number"
+          }
+        }
+      },
+      "InvoiceSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "competence": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "unitId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "unitName": {
+            "type": "string",
+            "nullable": true
+          },
+          "billingMode": {
+            "type": "string",
+            "enum": [
+              "PER_USE",
+              "PER_KWH"
+            ]
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InvoiceItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoiceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reservationId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "laundrySessionId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unitPrice": {
+            "type": "number"
+          },
+          "totalAmount": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InvoiceDetails": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/InvoiceSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/InvoiceItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "AdminDashboard": {
+        "type": "object",
+        "properties": {
+          "reservationsTotal": {
+            "type": "integer"
+          },
+          "sessionsTotal": {
+            "type": "integer"
+          },
+          "incidentsTotal": {
+            "type": "integer"
+          },
+          "invoicesTotal": {
+            "type": "integer"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseIncidents": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Incident"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseSystemSettings": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/SystemSettings"
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseBillingRunResult": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/BillingRunResult"
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseInvoices": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/InvoiceSummary"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseInvoiceDetails": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/InvoiceDetails"
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseAdminDashboard": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AdminDashboard"
+              }
+            }
+          }
+        ]
+      },
+      "ReservationBusy": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "machinePairId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "IN_PROGRESS"
+            ]
+          }
+        }
+      },
+      "ApiResponseReservationBusyList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReservationBusy"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MembershipProfile": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "PROPRIETARIO",
+              "LOCATARIO",
+              "HOSPEDE",
+              "ADMINISTRADOR",
+              "SUPER"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiResponseMembershipProfiles": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MembershipProfile"
+                }
               }
             }
           }

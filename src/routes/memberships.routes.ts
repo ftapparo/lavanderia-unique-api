@@ -6,6 +6,7 @@ import { requireRole } from '../middleware/require-role.middleware';
 
 const router = express.Router();
 
+router.get('/membership-profiles', authMiddleware, asyncHandler(membershipsController.listProfiles));
 router.get('/unit-memberships', authMiddleware, asyncHandler(membershipsController.list));
 router.post('/unit-memberships', authMiddleware, requireRole('ADMIN'), asyncHandler(membershipsController.create));
 router.patch('/unit-memberships/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(membershipsController.update));

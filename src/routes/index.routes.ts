@@ -8,6 +8,10 @@ import machinePairsRoutes from './machine-pairs.routes';
 import reservationsRoutes from './reservations.routes';
 import usersRoutes from './users.routes';
 import sessionsRoutes from './sessions.routes';
+import incidentsRoutes from './incidents.routes';
+import settingsRoutes from './settings.routes';
+import billingRoutes from './billing.routes';
+import adminRoutes from './admin.routes';
 
 const router = express.Router();
 
@@ -20,5 +24,9 @@ router.use(machinePairsRoutes);
 router.use(reservationsRoutes);
 router.use(usersRoutes);
 router.use(sessionsRoutes);
+router.use(incidentsRoutes);
+router.use(settingsRoutes);
+router.use(billingRoutes);
+router.use(adminRoutes);
 
 export default router;

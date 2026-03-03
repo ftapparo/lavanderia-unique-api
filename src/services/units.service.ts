@@ -12,10 +12,11 @@ export const unitsService = {
         return unitsRepository.listByUserId(userId);
     },
 
-    async create(input: { floor: number; unitNumber: number; active?: boolean }, actorUserId: string): Promise<UnitView> {
+    async create(input: { floor: number; unitNumber: number; active?: boolean; allowGuestReservations?: boolean }, actorUserId: string): Promise<UnitView> {
         const floor = Number(input.floor);
         const unitNumber = Number(input.unitNumber);
         const active = input.active ?? true;
+        const allowGuestReservations = input.allowGuestReservations ?? true;
 
         if (!Number.isInteger(floor) || floor < 0) {
             throw new AppError('Andar invalido. Informe valor inteiro maior ou igual a zero.', 400);
@@ -34,6 +35,7 @@ export const unitsService = {
                 floor,
                 unitNumber,
                 active,
+                allowGuestReservations,
             });
         } catch (error) {
             if ((error as { code?: string }).code === '23505') {
@@ -53,6 +55,7 @@ export const unitsService = {
                 floor: unit.floor,
                 unitNumber: unit.unit_number,
                 active: unit.active,
+                allowGuestReservations: unit.allow_guest_reservations,
             },
         });
 
@@ -63,10 +66,11 @@ export const unitsService = {
             floor: unit.floor,
             unitNumber: unit.unit_number,
             active: unit.active,
+            allowGuestReservations: unit.allow_guest_reservations,
         };
     },
 
-    async update(id: string, input: { floor?: number; unitNumber?: number; active?: boolean }, actorUserId: string): Promise<UnitView> {
+    async update(id: string, input: { floor?: number; unitNumber?: number; active?: boolean; allowGuestReservations?: boolean }, actorUserId: string): Promise<UnitView> {
         const existing = await unitsRepository.findById(id);
         if (!existing) {
             throw new AppError('Unidade nao encontrada.', 404);
@@ -75,6 +79,10 @@ export const unitsService = {
         const nextFloor = typeof input.floor === 'number' ? Number(input.floor) : undefined;
         const nextUnitNumber = typeof input.unitNumber === 'number' ? Number(input.unitNumber) : undefined;
         const nextActive = typeof input.active === 'boolean' ? input.active : undefined;
+        const nextAllowGuestReservations =
+            typeof input.allowGuestReservations === 'boolean'
+                ? input.allowGuestReservations
+                : undefined;
 
         if (typeof nextFloor === 'number' && (!Number.isInteger(nextFloor) || nextFloor < 0)) {
             throw new AppError('Andar invalido. Informe valor inteiro maior ou igual a zero.', 400);
@@ -98,6 +106,7 @@ export const unitsService = {
                 floor: nextFloor,
                 unitNumber: nextUnitNumber,
                 active: nextActive,
+                allowGuestReservations: nextAllowGuestReservations,
             });
         } catch (error) {
             if ((error as { code?: string }).code === '23505') {
@@ -121,6 +130,7 @@ export const unitsService = {
                 floor: updated.floor,
                 unitNumber: updated.unit_number,
                 active: updated.active,
+                allowGuestReservations: updated.allow_guest_reservations,
             },
         });
 
@@ -131,6 +141,7 @@ export const unitsService = {
             floor: updated.floor,
             unitNumber: updated.unit_number,
             active: updated.active,
+            allowGuestReservations: updated.allow_guest_reservations,
         };
     },
 

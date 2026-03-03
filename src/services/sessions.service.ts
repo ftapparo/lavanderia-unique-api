@@ -5,15 +5,21 @@ import { laundrySessionsRepository } from '../db/repositories/laundry-sessions.r
 import { machinePairsRepository } from '../db/repositories/machine-pairs.repository';
 import { machinesRepository } from '../db/repositories/machines.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
+import { systemSettingsRepository } from '../db/repositories/system-settings.repository';
 import { tuyaCommandLogsRepository } from '../db/repositories/tuya-command-logs.repository';
 import { tuyaClient } from '../integrations/tuya/tuya-client';
 import type { LaundrySessionView, MachineRecord } from '../types/domain.types';
 import { AppError } from '../utils/app-error';
 
-const isCheckinWithinWindow = (reservationStartAt: string, nowDate: Date): boolean => {
+const isCheckinWithinWindow = (
+    reservationStartAt: string,
+    nowDate: Date,
+    beforeMinutes: number,
+    afterMinutes: number,
+): boolean => {
     const start = new Date(reservationStartAt);
-    const windowStart = new Date(start.getTime() - (env.checkinWindowBeforeMinutes * 60 * 1000));
-    const windowEnd = new Date(start.getTime() + (env.checkinWindowAfterMinutes * 60 * 1000));
+    const windowStart = new Date(start.getTime() - (beforeMinutes * 60 * 1000));
+    const windowEnd = new Date(start.getTime() + (afterMinutes * 60 * 1000));
     return nowDate >= windowStart && nowDate <= windowEnd;
 };
 
@@ -70,11 +76,15 @@ export const sessionsService = {
             throw new AppError('Reserva ja finalizada.', 409);
         }
 
+        const settings = await systemSettingsRepository.get();
+        const checkinBeforeMinutes = settings.checkinWindowBeforeMinutes ?? env.checkinWindowBeforeMinutes;
+        const checkinAfterMinutes = settings.checkinWindowAfterMinutes ?? env.checkinWindowAfterMinutes;
+
         const now = new Date();
-        if (!isCheckinWithinWindow(reservation.start_at, now)) {
+        if (!isCheckinWithinWindow(reservation.start_at, now, checkinBeforeMinutes, checkinAfterMinutes)) {
             throw new AppError('Check-in fora da janela permitida.', 409, {
-                beforeMinutes: env.checkinWindowBeforeMinutes,
-                afterMinutes: env.checkinWindowAfterMinutes,
+                beforeMinutes: checkinBeforeMinutes,
+                afterMinutes: checkinAfterMinutes,
             });
         }
 
@@ -224,6 +234,29 @@ export const sessionsService = {
             ...sessionView,
             devices,
         };
+    },
+
+    async getSessionByReservationId(reservationId: string, actorUserId: string, isAdmin: boolean) {
+        const reservation = await reservationsRepository.findById(reservationId);
+        if (!reservation) {
+            throw new AppError('Reserva nao encontrada.', 404);
+        }
+
+        if (!isAdmin && reservation.user_id !== actorUserId) {
+            throw new AppError('Acesso negado para consultar sessao desta reserva.', 403);
+        }
+
+        const session = await laundrySessionsRepository.findByReservationId(reservationId);
+        if (!session) {
+            throw new AppError('Sessao nao encontrada para a reserva.', 404);
+        }
+
+        const view = await laundrySessionsRepository.findViewById(session.id);
+        if (!view) {
+            throw new AppError('Sessao nao encontrada para a reserva.', 404);
+        }
+
+        return view;
     },
 
     async finishSession(sessionId: string, actorUserId: string, isAdmin: boolean): Promise<LaundrySessionView> {

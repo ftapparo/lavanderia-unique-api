@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { machinePairsService } from '../services/machine-pairs.service';
+import { hasAdminAccess } from '../utils/auth-role';
 
 export const machinePairsController = {
     async create(req: Request, res: Response) {
@@ -14,7 +15,7 @@ export const machinePairsController = {
     },
 
     async list(req: Request, res: Response) {
-        const rows = await machinePairsService.list(String(req.auth?.userId), req.auth?.role === 'ADMIN');
+        const rows = await machinePairsService.list(String(req.auth?.userId), hasAdminAccess(req.auth?.role));
         res.ok(rows);
     },
 };

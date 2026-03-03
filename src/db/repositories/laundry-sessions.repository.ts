@@ -106,4 +106,89 @@ export const laundrySessionsRepository = {
         );
         return result.rows[0] || null;
     },
+
+    async listActivePastReservationEnd(nowIso: string): Promise<Array<{
+        id: string;
+        reservationId: string;
+        machinePairId: string;
+        unitId: string;
+        userId: string;
+        overtimeStartedAt: string | null;
+    }>> {
+        const result = await db.query<Array<{
+            id: string;
+            reservationId: string;
+            machinePairId: string;
+            unitId: string;
+            userId: string;
+            overtimeStartedAt: string | null;
+        }>[number]>(
+            `SELECT ls.id,
+                    ls.reservation_id AS "reservationId",
+                    ls.machine_pair_id AS "machinePairId",
+                    ls.unit_id AS "unitId",
+                    ls.user_id AS "userId",
+                    ls.overtime_started_at AS "overtimeStartedAt"
+             FROM laundry_sessions ls
+             INNER JOIN reservations r ON r.id = ls.reservation_id
+             WHERE ls.status = 'ACTIVE'
+               AND r.end_at <= $1
+             ORDER BY r.end_at ASC`,
+            [nowIso],
+        );
+
+        return result.rows;
+    },
+
+    async listActiveOvertimeSessions(): Promise<Array<{
+        id: string;
+        reservationId: string;
+        machinePairId: string;
+        unitId: string;
+        userId: string;
+        overtimeStartedAt: string;
+    }>> {
+        const result = await db.query<Array<{
+            id: string;
+            reservationId: string;
+            machinePairId: string;
+            unitId: string;
+            userId: string;
+            overtimeStartedAt: string;
+        }>[number]>(
+            `SELECT ls.id,
+                    ls.reservation_id AS "reservationId",
+                    ls.machine_pair_id AS "machinePairId",
+                    ls.unit_id AS "unitId",
+                    ls.user_id AS "userId",
+                    ls.overtime_started_at AS "overtimeStartedAt"
+             FROM laundry_sessions ls
+             WHERE ls.status = 'ACTIVE'
+               AND ls.overtime_started_at IS NOT NULL
+             ORDER BY ls.overtime_started_at ASC`,
+            [],
+        );
+
+        return result.rows;
+    },
+
+    async markOvertimeStarted(id: string, startedAtIso: string): Promise<void> {
+        await db.query(
+            `UPDATE laundry_sessions
+             SET overtime_started_at = COALESCE(overtime_started_at, $2),
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [id, startedAtIso],
+        );
+    },
+
+    async markOvertimeEnded(id: string, endedAtIso: string): Promise<void> {
+        await db.query(
+            `UPDATE laundry_sessions
+             SET overtime_ended_at = $2,
+                 updated_at = NOW()
+             WHERE id = $1`,
+            [id, endedAtIso],
+        );
+    },
 };

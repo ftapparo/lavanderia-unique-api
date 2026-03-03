@@ -1,4 +1,4 @@
-export type UserRole = 'USER' | 'ADMIN';
+export type UserRole = 'USER' | 'ADMIN' | 'SUPER';
 
 export type UserRecord = {
     id: string;
@@ -19,6 +19,7 @@ export type UnitRecord = {
     floor: number | null;
     unit_number: number | null;
     active: boolean;
+    allow_guest_reservations: boolean;
     created_at: string;
     updated_at: string;
 };
@@ -66,6 +67,12 @@ export type MembershipView = {
     active: boolean;
 };
 
+export type MembershipProfileView = {
+    code: 'PROPRIETARIO' | 'LOCATARIO' | 'HOSPEDE' | 'ADMINISTRADOR' | 'SUPER';
+    name: string;
+    description: string;
+};
+
 export type UnitView = {
     id: string;
     name: string;
@@ -73,6 +80,7 @@ export type UnitView = {
     floor: number | null;
     unitNumber: number | null;
     active: boolean;
+    allowGuestReservations: boolean;
 };
 
 export type MachineType = 'WASHER' | 'DRYER';
@@ -152,6 +160,14 @@ export type ReservationView = {
     canceledAt: string | null;
 };
 
+export type ReservationBusyView = {
+    id: string;
+    machinePairId: string;
+    startAt: string;
+    endAt: string;
+    status: ReservationStatus;
+};
+
 export type LaundrySessionStatus = 'ACTIVE' | 'FINISHED' | 'FORCED_FINISHED';
 
 export type LaundrySessionRecord = {
@@ -212,4 +228,108 @@ export type TuyaCommandLogRecord = {
     response_payload: Record<string, unknown>;
     error_message: string | null;
     created_at: string;
+};
+
+export type IncidentType = 'NO_SHOW' | 'OVERTIME' | 'FORCED_SHUTDOWN' | 'TUYA_ERROR';
+
+export type IncidentRecord = {
+    id: string;
+    type: IncidentType;
+    reservation_id: string | null;
+    laundry_session_id: string | null;
+    unit_id: string | null;
+    user_id: string | null;
+    description: string;
+    metadata: Record<string, unknown>;
+    created_at: string;
+};
+
+export type IncidentView = {
+    id: string;
+    type: IncidentType;
+    reservationId: string | null;
+    laundrySessionId: string | null;
+    unitId: string | null;
+    unitName: string | null;
+    userId: string | null;
+    userName: string | null;
+    description: string;
+    metadata: Record<string, unknown>;
+    createdAt: string;
+};
+
+export type SystemSettingsRecord = {
+    id: number;
+    checkin_window_before_minutes: number;
+    checkin_window_after_minutes: number;
+    overtime_threshold_watts: string;
+    consumption_poll_seconds: number;
+    billing_mode: 'PER_USE' | 'PER_KWH';
+    price_per_use: string;
+    price_per_kwh: string;
+    updated_by_user_id: string | null;
+    updated_at: string;
+};
+
+export type SystemSettingsView = {
+    checkinWindowBeforeMinutes: number;
+    checkinWindowAfterMinutes: number;
+    overtimeThresholdWatts: number;
+    consumptionPollSeconds: number;
+    billingMode: 'PER_USE' | 'PER_KWH';
+    pricePerUse: number;
+    pricePerKwh: number;
+    updatedByUserId: string | null;
+    updatedAt: string;
+};
+
+export type InvoiceRecord = {
+    id: string;
+    competence: string;
+    user_id: string;
+    unit_id: string | null;
+    billing_mode: 'PER_USE' | 'PER_KWH';
+    total_amount: string;
+    generated_at: string;
+    created_at: string;
+    updated_at: string;
+};
+
+export type InvoiceItemRecord = {
+    id: string;
+    invoice_id: string;
+    reservation_id: string | null;
+    laundry_session_id: string | null;
+    description: string;
+    quantity: string;
+    unit_price: string;
+    total_amount: string;
+    metadata: Record<string, unknown>;
+    created_at: string;
+};
+
+export type InvoiceView = {
+    id: string;
+    competence: string;
+    userId: string;
+    userName: string;
+    unitId: string | null;
+    unitName: string | null;
+    billingMode: 'PER_USE' | 'PER_KWH';
+    totalAmount: number;
+    generatedAt: string;
+    createdAt: string;
+};
+
+export type InvoiceItemView = {
+    id: string;
+    invoiceId: string;
+    reservationId: string | null;
+    laundrySessionId: string | null;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    totalAmount: number;
+    metadata: Record<string, unknown>;
+    createdAt: string;
 };

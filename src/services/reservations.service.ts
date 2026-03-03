@@ -2,8 +2,9 @@ import { auditLogsRepository } from '../db/repositories/audit-logs.repository';
 import { machinePairsRepository } from '../db/repositories/machine-pairs.repository';
 import { membershipsRepository } from '../db/repositories/memberships.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
+import { unitsRepository } from '../db/repositories/units.repository';
 import { usersRepository } from '../db/repositories/users.repository';
-import type { ReservationRecord, ReservationView } from '../types/domain.types';
+import type { ReservationBusyView, ReservationRecord, ReservationView } from '../types/domain.types';
 import { AppError } from '../utils/app-error';
 
 type PgErrorLike = {
@@ -23,13 +24,12 @@ const toDate = (value: string): Date => {
 
 const toIso = (date: Date): string => date.toISOString();
 
-const hasActiveMembershipOnDate = async (userId: string, unitId: string, atDate: Date): Promise<boolean> => {
-    const membership = await membershipsRepository.findActiveByUserAndUnitOnDate(
+const getActiveMembershipOnDate = async (userId: string, unitId: string, atDate: Date) => {
+    return membershipsRepository.findActiveByUserAndUnitOnDate(
         userId,
         unitId,
         atDate.toISOString().slice(0, 10),
     );
-    return Boolean(membership);
 };
 
 const mapReservationDbError = (error: unknown): never => {
@@ -58,12 +58,30 @@ export const reservationsService = {
         if (!unitId || !machinePairId) {
             throw new AppError('Unidade e par de maquinas sao obrigatorios.', 400);
         }
-        const targetReservationUserId = isAdmin && input.userId?.trim()
-            ? input.userId.trim()
-            : userId;
-
         const startAt = toDate(input.startAt);
         const endAt = new Date(startAt.getTime() + TWO_HOURS_MS);
+        const reservationDateIso = startAt.toISOString().slice(0, 10);
+        const requestedUserId = input.userId?.trim() || '';
+
+        const unit = await unitsRepository.findById(unitId);
+        if (!unit) {
+            throw new AppError('Unidade nao encontrada.', 404);
+        }
+
+        const actorCanManageUnit = isAdmin || await membershipsRepository.hasAnyProfileByUserAndUnitOnDate({
+            userId,
+            unitId,
+            dateIso: reservationDateIso,
+            profiles: ['ADMINISTRADOR', 'SUPER'],
+        });
+
+        let targetReservationUserId = userId;
+        if (requestedUserId) {
+            if (!isAdmin && !actorCanManageUnit) {
+                throw new AppError('Sem permissao para reservar em nome de outro usuario.', 403);
+            }
+            targetReservationUserId = requestedUserId;
+        }
 
         const pair = await machinePairsRepository.findById(machinePairId);
         if (!pair) {
@@ -74,18 +92,20 @@ export const reservationsService = {
             throw new AppError('Par de maquinas inativo.', 400);
         }
 
-        if (isAdmin && targetReservationUserId !== userId) {
+        if ((isAdmin || actorCanManageUnit) && targetReservationUserId !== userId) {
             const targetUser = await usersRepository.findById(targetReservationUserId);
             if (!targetUser) {
                 throw new AppError('Usuario selecionado para reserva nao encontrado.', 404);
             }
         }
 
-        if (!isAdmin || targetReservationUserId !== userId) {
-            const activeMembership = await hasActiveMembershipOnDate(targetReservationUserId, unitId, startAt);
-            if (!activeMembership) {
-                throw new AppError('Usuario sem vinculo ativo para a unidade da reserva.', 403);
-            }
+        const activeMembership = await getActiveMembershipOnDate(targetReservationUserId, unitId, startAt);
+        if (!activeMembership) {
+            throw new AppError('Usuario sem vinculo ativo para a unidade da reserva.', 403);
+        }
+
+        if (!isAdmin && !actorCanManageUnit && activeMembership.profile === 'HOSPEDE' && !unit.allow_guest_reservations) {
+            throw new AppError('Reservas de hospede desativadas para esta unidade.', 403);
         }
 
         try {
@@ -125,6 +145,10 @@ export const reservationsService = {
         }
 
         return reservationsRepository.listByUserId(userId);
+    },
+
+    async listBusy(): Promise<ReservationBusyView[]> {
+        return reservationsRepository.listBusy();
     },
 
     async cancel(reservationId: string, userId: string, isAdmin: boolean) {
