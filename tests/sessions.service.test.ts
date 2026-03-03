@@ -3,6 +3,7 @@ import { laundrySessionsRepository } from '../src/db/repositories/laundry-sessio
 import { machinePairsRepository } from '../src/db/repositories/machine-pairs.repository';
 import { machinesRepository } from '../src/db/repositories/machines.repository';
 import { reservationsRepository } from '../src/db/repositories/reservations.repository';
+import { systemSettingsRepository } from '../src/db/repositories/system-settings.repository';
 import { tuyaCommandLogsRepository } from '../src/db/repositories/tuya-command-logs.repository';
 import { tuyaClient } from '../src/integrations/tuya/tuya-client';
 import { sessionsService } from '../src/services/sessions.service';
@@ -19,6 +20,17 @@ describe('sessions.service', () => {
     });
 
     it('blocks checkin when outside allowed window', async () => {
+        jest.spyOn(systemSettingsRepository, 'get').mockResolvedValue({
+            checkinWindowBeforeMinutes: 15,
+            checkinWindowAfterMinutes: 30,
+            overtimeThresholdWatts: 15,
+            consumptionPollSeconds: 30,
+            billingMode: 'PER_USE',
+            pricePerUse: 12,
+            pricePerKwh: 2.5,
+            updatedByUserId: null,
+            updatedAt: new Date().toISOString(),
+        });
         jest.spyOn(reservationsRepository, 'findById').mockResolvedValue({
             id: reservationId,
             unit_id: 'unit-1',
@@ -40,6 +52,17 @@ describe('sessions.service', () => {
         const now = new Date();
         const startAt = new Date(now.getTime() + 10 * 60 * 1000).toISOString();
         const endAt = new Date(now.getTime() + (2 * 60 * 60 * 1000)).toISOString();
+        jest.spyOn(systemSettingsRepository, 'get').mockResolvedValue({
+            checkinWindowBeforeMinutes: 15,
+            checkinWindowAfterMinutes: 30,
+            overtimeThresholdWatts: 15,
+            consumptionPollSeconds: 30,
+            billingMode: 'PER_USE',
+            pricePerUse: 12,
+            pricePerKwh: 2.5,
+            updatedByUserId: null,
+            updatedAt: new Date().toISOString(),
+        });
 
         jest.spyOn(reservationsRepository, 'findById').mockResolvedValue({
             id: reservationId,

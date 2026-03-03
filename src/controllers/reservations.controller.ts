@@ -2,14 +2,27 @@ import type { Request, Response } from 'express';
 import { reservationsService } from '../services/reservations.service';
 import { sessionsService } from '../services/sessions.service';
 import { hasAdminAccess } from '../utils/auth-role';
+import { AppError } from '../utils/app-error';
+import { isUuid } from '../utils/validators';
 
 export const reservationsController = {
     async create(req: Request, res: Response) {
+        const unitId = String(req.body?.unitId || '');
+        const machinePairId = String(req.body?.machinePairId || '');
+        const userId = req.body?.userId ? String(req.body.userId) : undefined;
+
+        if (!isUuid(unitId) || !isUuid(machinePairId)) {
+            throw new AppError('Identificadores de unidade/par invalidos.', 400);
+        }
+        if (userId && !isUuid(userId)) {
+            throw new AppError('Identificador de usuario invalido.', 400);
+        }
+
         const reservation = await reservationsService.create({
-            unitId: String(req.body?.unitId || ''),
-            machinePairId: String(req.body?.machinePairId || ''),
+            unitId,
+            machinePairId,
             startAt: String(req.body?.startAt || ''),
-            userId: req.body?.userId ? String(req.body.userId) : undefined,
+            userId,
         }, String(req.auth?.userId), hasAdminAccess(req.auth?.role));
 
         res.ok(reservation, 201);
@@ -26,8 +39,13 @@ export const reservationsController = {
     },
 
     async cancel(req: Request, res: Response) {
+        const reservationId = String(req.params.id || '');
+        if (!isUuid(reservationId)) {
+            throw new AppError('Identificador de reserva invalido.', 400);
+        }
+
         const reservation = await reservationsService.cancel(
-            String(req.params.id || ''),
+            reservationId,
             String(req.auth?.userId),
             hasAdminAccess(req.auth?.role),
         );
@@ -35,8 +53,13 @@ export const reservationsController = {
     },
 
     async checkin(req: Request, res: Response) {
+        const reservationId = String(req.params.id || '');
+        if (!isUuid(reservationId)) {
+            throw new AppError('Identificador de reserva invalido.', 400);
+        }
+
         const session = await sessionsService.checkinReservation(
-            String(req.params.id || ''),
+            reservationId,
             String(req.auth?.userId),
             hasAdminAccess(req.auth?.role),
         );

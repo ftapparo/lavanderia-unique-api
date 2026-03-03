@@ -10,6 +10,7 @@ import { tuyaCommandLogsRepository } from '../db/repositories/tuya-command-logs.
 import { tuyaClient } from '../integrations/tuya/tuya-client';
 import type { MachineRecord } from '../types/domain.types';
 import { billingService } from './billing.service';
+import { logger } from '../utils/logger';
 
 type ControllableMachine = {
     id: string;
@@ -36,6 +37,8 @@ const noShowCronExpression = process.env.JOB_NO_SHOW_CRON || '*/2 * * * *';
 const reservationEndCronExpression = process.env.JOB_RESERVATION_END_CRON || '* * * * *';
 const overtimeCronExpression = process.env.JOB_OVERTIME_MONITOR_CRON || '* * * * *';
 const monthlyBillingCronExpression = process.env.JOB_MONTHLY_BILLING_CRON || '5 0 1 * *';
+const criticalRetryAttempts = Number(process.env.JOB_RETRY_ATTEMPTS || 3);
+const criticalRetryDelayMs = Number(process.env.JOB_RETRY_DELAY_MS || 500);
 
 const isEnabled = (): boolean => {
     if ((process.env.NODE_ENV || '').toLowerCase() === 'test') {
@@ -46,6 +49,63 @@ const isEnabled = (): boolean => {
 };
 
 const currentCompetence = (date: Date): string => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+const processingLocks = new Set<string>();
+
+type JobState = {
+    lastStartedAt: string | null;
+    lastFinishedAt: string | null;
+    lastStatus: 'SUCCESS' | 'ERROR' | 'RUNNING' | 'IDLE';
+    lastError: string | null;
+    runCount: number;
+    successCount: number;
+    errorCount: number;
+};
+
+const jobStateByName: Record<string, JobState> = {
+    'no-show-detector': { lastStartedAt: null, lastFinishedAt: null, lastStatus: 'IDLE', lastError: null, runCount: 0, successCount: 0, errorCount: 0 },
+    'reservation-end-handler': { lastStartedAt: null, lastFinishedAt: null, lastStatus: 'IDLE', lastError: null, runCount: 0, successCount: 0, errorCount: 0 },
+    'overtime-monitor': { lastStartedAt: null, lastFinishedAt: null, lastStatus: 'IDLE', lastError: null, runCount: 0, successCount: 0, errorCount: 0 },
+    'monthly-billing-generator': { lastStartedAt: null, lastFinishedAt: null, lastStatus: 'IDLE', lastError: null, runCount: 0, successCount: 0, errorCount: 0 },
+};
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+const runWithLock = async (key: string, fn: () => Promise<void>): Promise<void> => {
+    if (processingLocks.has(key)) {
+        return;
+    }
+    processingLocks.add(key);
+    try {
+        await fn();
+    } finally {
+        processingLocks.delete(key);
+    }
+};
+
+const retry = async (name: string, fn: () => Promise<void>): Promise<void> => {
+    let attempt = 0;
+    let lastError: unknown = null;
+    while (attempt < criticalRetryAttempts) {
+        try {
+            await fn();
+            return;
+        } catch (error) {
+            lastError = error;
+            attempt += 1;
+            if (attempt >= criticalRetryAttempts) {
+                throw error;
+            }
+            logger.warn('JOB_RETRY', {
+                jobName: name,
+                attempt,
+                maxAttempts: criticalRetryAttempts,
+                error: error instanceof Error ? error.message : error,
+            });
+            await wait(criticalRetryDelayMs * attempt);
+        }
+    }
+    throw lastError;
+};
 
 const closeSessionAndReservation = async (input: {
     sessionId: string;
@@ -175,18 +235,22 @@ const runNoShowDetector = async (): Promise<void> => {
     const now = new Date();
     const candidates = await reservationsRepository.listNoShowCandidates(now.toISOString());
     for (const reservation of candidates) {
-        await reservationsRepository.updateStatus(reservation.id, 'FINISHED');
-        await incidentsRepository.create({
-            type: 'NO_SHOW',
-            reservationId: reservation.id,
-            unitId: reservation.unit_id,
-            userId: reservation.user_id,
-            description: 'Reserva encerrada automaticamente por ausencia de check-in.',
-            metadata: {
-                reservationStartAt: reservation.start_at,
-                reservationEndAt: reservation.end_at,
-                detectorRunAt: now.toISOString(),
-            },
+        await runWithLock(`reservation:${reservation.id}`, async () => {
+            await retry('no-show-detector', async () => {
+                await reservationsRepository.updateStatus(reservation.id, 'FINISHED');
+                await incidentsRepository.create({
+                    type: 'NO_SHOW',
+                    reservationId: reservation.id,
+                    unitId: reservation.unit_id,
+                    userId: reservation.user_id,
+                    description: 'Reserva encerrada automaticamente por ausencia de check-in.',
+                    metadata: {
+                        reservationStartAt: reservation.start_at,
+                        reservationEndAt: reservation.end_at,
+                        detectorRunAt: now.toISOString(),
+                    },
+                });
+            });
         });
     }
 };
@@ -197,7 +261,11 @@ const runReservationEndHandler = async (): Promise<void> => {
     const sessions = await laundrySessionsRepository.listActivePastReservationEnd(now.toISOString());
 
     for (const session of sessions) {
-        await evaluateAndShutdownSession(session, now, settings.overtimeThresholdWatts);
+        await runWithLock(`session:${session.id}`, async () => {
+            await retry('reservation-end-handler', async () => {
+                await evaluateAndShutdownSession(session, now, settings.overtimeThresholdWatts);
+            });
+        });
     }
 };
 
@@ -206,21 +274,44 @@ const runOvertimeMonitor = async (): Promise<void> => {
     const settings = await systemSettingsRepository.get();
     const sessions = await laundrySessionsRepository.listActiveOvertimeSessions();
     for (const session of sessions) {
-        await evaluateAndShutdownSession(session, now, settings.overtimeThresholdWatts);
+        await runWithLock(`session:${session.id}`, async () => {
+            await retry('overtime-monitor', async () => {
+                await evaluateAndShutdownSession(session, now, settings.overtimeThresholdWatts);
+            });
+        });
     }
 };
 
 const runMonthlyBillingGenerator = async (): Promise<void> => {
     const now = new Date();
     const competence = currentCompetence(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-    await billingService.run({ competence });
+    await runWithLock(`billing:${competence}`, async () => {
+        await retry('monthly-billing-generator', async () => {
+            await billingService.run({ competence });
+        });
+    });
 };
 
 const guard = async (name: string, fn: () => Promise<void>) => {
+    const state = jobStateByName[name];
+    state.lastStartedAt = new Date().toISOString();
+    state.lastStatus = 'RUNNING';
+    state.runCount += 1;
     try {
         await fn();
+        state.lastFinishedAt = new Date().toISOString();
+        state.lastStatus = 'SUCCESS';
+        state.lastError = null;
+        state.successCount += 1;
     } catch (error) {
-        console.error(`[Jobs] Falha no job ${name}`, error);
+        state.lastFinishedAt = new Date().toISOString();
+        state.lastStatus = 'ERROR';
+        state.lastError = error instanceof Error ? error.message : String(error);
+        state.errorCount += 1;
+        logger.error('JOB_FAILED', {
+            jobName: name,
+            error: state.lastError,
+        });
     }
 };
 
@@ -249,7 +340,7 @@ class OpsJobsService {
         );
 
         this.started = true;
-        console.log('[Jobs] Scheduler iniciado.', {
+        logger.info('JOBS_SCHEDULER_STARTED', {
             noShowCronExpression,
             reservationEndCronExpression,
             overtimeCronExpression,
@@ -273,6 +364,18 @@ class OpsJobsService {
 
     async runOvertimeMonitorNow(): Promise<void> {
         await runOvertimeMonitor();
+    }
+
+    getStatus() {
+        return {
+            enabled: isEnabled(),
+            started: this.started,
+            jobs: jobStateByName,
+            retry: {
+                attempts: criticalRetryAttempts,
+                baseDelayMs: criticalRetryDelayMs,
+            },
+        };
     }
 }
 

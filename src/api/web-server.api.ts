@@ -6,9 +6,11 @@ import apiRoutes from '../routes/index.routes';
 import { requestContextMiddleware } from '../middleware/request-context';
 import { responseHandler } from '../middleware/response-handler';
 import { errorHandler } from '../middleware/error-handler';
+import { requestLoggerMiddleware } from '../middleware/request-logger';
 import type { Express, RequestHandler } from 'express';
 import type { Server } from 'http';
 import { env } from '../config/env';
+import { logger } from '../utils/logger';
 
 export const swaggerUiOptions = {
     swaggerOptions: {
@@ -35,6 +37,7 @@ export function createApp(): Express {
     app.use(express.json());
     app.use(requestContextMiddleware);
     app.use(responseHandler);
+    app.use(requestLoggerMiddleware);
 
     app.use('/v1/api', apiRoutes);
 
@@ -59,7 +62,7 @@ export async function StartWebServer(appInstance: Express = createApp()): Promis
     const port = process.env.PORT || env.port;
 
     const server = app.listen(port, () => {
-        console.log(`[Api] WebServer rodando na porta ${port}`);
+        logger.info('API_SERVER_STARTED', { port });
     });
 
     return server;

@@ -2987,6 +2987,119 @@
           }
         }
       }
+    },
+    "/v1/api/admin/ops/health": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Saude operacional",
+        "description": "Retorna saude de banco, Tuya e status de jobs.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saude operacional retornada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminOpsHealth"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/admin/ops/active-sessions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Listar sessoes ativas",
+        "description": "Retorna sessoes ativas para reconciliacao operacional.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessoes ativas retornadas com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminActiveSessions"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/admin/ops/reconcile-session/{id}": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reconciliar sessao ativa",
+        "description": "Forca finalizacao administrativa de uma sessao ativa.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessao reconciliada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLaundrySession"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4250,6 +4363,74 @@
           "generatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "activeSessionsTotal": {
+            "type": "integer"
+          },
+          "tuyaErrorsLast24h": {
+            "type": "integer"
+          },
+          "jobs": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "started": {
+                "type": "boolean"
+              },
+              "retry": {
+                "type": "object",
+                "properties": {
+                  "attempts": {
+                    "type": "integer"
+                  },
+                  "baseDelayMs": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "jobs": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "lastStartedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "lastFinishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    },
+                    "lastStatus": {
+                      "type": "string",
+                      "enum": [
+                        "SUCCESS",
+                        "ERROR",
+                        "RUNNING",
+                        "IDLE"
+                      ]
+                    },
+                    "lastError": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "runCount": {
+                      "type": "integer"
+                    },
+                    "successCount": {
+                      "type": "integer"
+                    },
+                    "errorCount": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -4430,6 +4611,99 @@
                 "items": {
                   "$ref": "#/components/schemas/MembershipProfile"
                 }
+              }
+            }
+          }
+        ]
+      },
+      "AdminActiveSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reservationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "unitName": {
+            "type": "string"
+          },
+          "machinePairName": {
+            "type": "string"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "overtimeStartedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "AdminOpsHealth": {
+        "type": "object",
+        "properties": {
+          "db": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "tuya": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "tuyaDetails": {
+            "nullable": true
+          },
+          "jobs": {
+            "type": "object"
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiResponseAdminActiveSessions": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AdminActiveSession"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseAdminOpsHealth": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AdminOpsHealth"
               }
             }
           }

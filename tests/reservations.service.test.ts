@@ -3,6 +3,7 @@ import { machinePairsRepository } from '../src/db/repositories/machine-pairs.rep
 import { membershipsRepository } from '../src/db/repositories/memberships.repository';
 import { reservationsRepository } from '../src/db/repositories/reservations.repository';
 import { auditLogsRepository } from '../src/db/repositories/audit-logs.repository';
+import { unitsRepository } from '../src/db/repositories/units.repository';
 
 describe('reservations.service', () => {
     const userId = 'user-1';
@@ -16,6 +17,18 @@ describe('reservations.service', () => {
     it('creates reservation with fixed 2h duration', async () => {
         const startAt = '2026-03-03T10:00:00.000Z';
 
+        jest.spyOn(unitsRepository, 'findById').mockResolvedValue({
+            id: unitId,
+            name: 'Unidade 101',
+            code: '101',
+            floor: 1,
+            unit_number: 1,
+            active: true,
+            allow_guest_reservations: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        });
+        jest.spyOn(membershipsRepository, 'hasAnyProfileByUserAndUnitOnDate').mockResolvedValue(false);
         jest.spyOn(machinePairsRepository, 'findById').mockResolvedValue({
             id: pairId,
             name: 'Par A',
@@ -52,7 +65,7 @@ describe('reservations.service', () => {
         });
         jest.spyOn(auditLogsRepository, 'add').mockResolvedValue(undefined);
 
-        const result = await reservationsService.create({ unitId, machinePairId: pairId, startAt }, userId);
+        const result = await reservationsService.create({ unitId, machinePairId: pairId, startAt }, userId, false);
 
         expect(result.id).toBe('res-1');
         expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
@@ -66,6 +79,18 @@ describe('reservations.service', () => {
     });
 
     it('blocks creation when user has no active membership', async () => {
+        jest.spyOn(unitsRepository, 'findById').mockResolvedValue({
+            id: unitId,
+            name: 'Unidade 101',
+            code: '101',
+            floor: 1,
+            unit_number: 1,
+            active: true,
+            allow_guest_reservations: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        });
+        jest.spyOn(membershipsRepository, 'hasAnyProfileByUserAndUnitOnDate').mockResolvedValue(false);
         jest.spyOn(machinePairsRepository, 'findById').mockResolvedValue({
             id: pairId,
             name: 'Par A',
@@ -81,10 +106,22 @@ describe('reservations.service', () => {
             unitId,
             machinePairId: pairId,
             startAt: '2026-03-03T10:00:00.000Z',
-        }, userId)).rejects.toMatchObject({ status: 403 });
+        }, userId, false)).rejects.toMatchObject({ status: 403 });
     });
 
     it('maps overlap conflict to 409', async () => {
+        jest.spyOn(unitsRepository, 'findById').mockResolvedValue({
+            id: unitId,
+            name: 'Unidade 101',
+            code: '101',
+            floor: 1,
+            unit_number: 1,
+            active: true,
+            allow_guest_reservations: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        });
+        jest.spyOn(membershipsRepository, 'hasAnyProfileByUserAndUnitOnDate').mockResolvedValue(false);
         jest.spyOn(machinePairsRepository, 'findById').mockResolvedValue({
             id: pairId,
             name: 'Par A',
@@ -111,7 +148,7 @@ describe('reservations.service', () => {
             unitId,
             machinePairId: pairId,
             startAt: '2026-03-03T10:00:00.000Z',
-        }, userId)).rejects.toMatchObject({ status: 409 });
+        }, userId, false)).rejects.toMatchObject({ status: 409 });
     });
 
     it('blocks cancel by non-owner non-admin', async () => {

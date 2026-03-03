@@ -94,7 +94,15 @@ const request = async <T>(path: string, init: RequestInit): Promise<T> => {
             if (error instanceof AppError) {
                 throw error;
             }
-            throw new AppError('Serviço Tuya indisponivel.', 502, error instanceof Error ? error.message : error);
+            const isAbort = error instanceof Error && error.name === 'AbortError';
+            throw new AppError(
+                isAbort ? 'Timeout ao acessar servico Tuya.' : 'Servico Tuya indisponivel.',
+                502,
+                {
+                    code: isAbort ? 'TUYA_TIMEOUT' : 'TUYA_UNAVAILABLE',
+                    cause: error instanceof Error ? error.message : error,
+                },
+            );
         } finally {
             clearTimeout(timeout);
         }
@@ -104,6 +112,20 @@ const request = async <T>(path: string, init: RequestInit): Promise<T> => {
 };
 
 export const tuyaClient = {
+    async health() {
+        if (env.tuyaMockMode) {
+            return {
+                status: 'ok',
+                mocked: true,
+            };
+        }
+
+        return request<{ status: string; environment?: string }>(
+            '/v1/api/health',
+            { method: 'GET' },
+        );
+    },
+
     async turnOn(deviceId: string) {
         if (env.tuyaMockMode) {
             return commandMock(deviceId, 'TURN_ON');

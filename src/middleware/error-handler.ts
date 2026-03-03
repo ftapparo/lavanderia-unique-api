@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../utils/app-error';
+import { logger } from '../utils/logger';
 
 export const errorHandler = (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const requestContext = {
@@ -10,7 +11,7 @@ export const errorHandler = (error: unknown, _req: Request, res: Response, _next
     };
 
     if (error instanceof AppError) {
-        console.warn('[API][AppError]', {
+        logger.warn('API_APP_ERROR', {
             ...requestContext,
             status: error.status,
             message: error.message,
@@ -21,7 +22,7 @@ export const errorHandler = (error: unknown, _req: Request, res: Response, _next
     }
 
     const message = error instanceof Error ? error.message : 'Erro interno';
-    console.error('[API][UnhandledError]', {
+    logger.error('API_UNHANDLED_ERROR', {
         ...requestContext,
         message,
         stack: error instanceof Error ? error.stack : null,

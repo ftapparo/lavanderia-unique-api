@@ -7,5 +7,8 @@ import { requireRole } from '../middleware/require-role.middleware';
 const router = express.Router();
 
 router.get('/admin/dashboard', authMiddleware, requireRole('ADMIN'), asyncHandler(adminController.dashboard));
+router.get('/admin/ops/health', authMiddleware, requireRole('ADMIN'), asyncHandler(adminController.opsHealth));
+router.get('/admin/ops/active-sessions', authMiddleware, requireRole('ADMIN'), asyncHandler(adminController.listActiveSessions));
+router.post('/admin/ops/reconcile-session/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(adminController.reconcileSession));
 
 export default router;

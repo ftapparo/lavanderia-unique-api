@@ -1,26 +1,27 @@
 import dotenv from 'dotenv';
 import { StartWebServer } from './api/web-server.api';
 import { opsJobsService } from './services/ops-jobs.service';
+import { logger } from './utils/logger';
 
 const dotenvResult = dotenv.config();
 if (dotenvResult.error) {
     const error = dotenvResult.error as NodeJS.ErrnoException;
     if (error.code === 'ENOENT') {
-        console.log('[Server] .env nao encontrado. Usando variaveis de ambiente do container/sistema.');
+        logger.info('ENV_FILE_NOT_FOUND_USING_SYSTEM_ENV');
     } else {
-        console.error('[Server] Falha ao carregar .env:', dotenvResult.error);
+        logger.error('ENV_FILE_LOAD_FAILED', { error: dotenvResult.error.message });
     }
 } else {
-    console.log('[Server] .env carregado com sucesso');
+    logger.info('ENV_FILE_LOADED');
 }
 
 async function StartService(): Promise<void> {
     try {
         await StartWebServer();
         opsJobsService.start();
-        console.log('[Server] Servico web inicializado.');
+        logger.info('SERVICE_STARTED');
     } catch (err) {
-        console.error('[Server] Erro ao inicializar:', err);
+        logger.error('SERVICE_START_FAILED', { error: err instanceof Error ? err.message : err });
         process.exit(1);
     }
 }
