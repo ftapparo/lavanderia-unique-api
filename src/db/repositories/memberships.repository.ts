@@ -198,4 +198,54 @@ export const membershipsRepository = {
 
         return Boolean(result.rows[0]);
     },
+
+    async findBillingResponsibleUserByUnitOnDate(unitId: string, dateIso: string): Promise<string | null> {
+        const result = await db.query<{ user_id: string }>(
+            `SELECT user_id
+             FROM unit_memberships
+             WHERE unit_id = $1
+               AND active = true
+               AND profile IN ('LOCATARIO', 'PROPRIETARIO', 'ADMINISTRADOR', 'SUPER')
+               AND start_date <= $2::date
+               AND (end_date IS NULL OR end_date >= $2::date)
+             ORDER BY CASE profile
+                 WHEN 'LOCATARIO' THEN 1
+                 WHEN 'PROPRIETARIO' THEN 2
+                 WHEN 'ADMINISTRADOR' THEN 3
+                 WHEN 'SUPER' THEN 4
+                 ELSE 99
+             END,
+             start_date DESC
+             LIMIT 1`,
+            [unitId, dateIso],
+        );
+
+        return result.rows[0]?.user_id || null;
+    },
+
+    async listAccessibleUnitIdsByUserOnDate(userId: string, dateIso: string): Promise<string[]> {
+        const result = await db.query<{ unit_id: string }>(
+            `SELECT DISTINCT um.unit_id
+             FROM unit_memberships um
+             WHERE um.user_id = $1
+               AND um.active = true
+               AND um.start_date <= $2::date
+               AND (um.end_date IS NULL OR um.end_date >= $2::date)
+               AND (
+                 um.profile <> 'PROPRIETARIO'
+                 OR NOT EXISTS (
+                   SELECT 1
+                   FROM unit_memberships tenant
+                   WHERE tenant.unit_id = um.unit_id
+                     AND tenant.profile = 'LOCATARIO'
+                     AND tenant.active = true
+                     AND tenant.start_date <= $2::date
+                     AND (tenant.end_date IS NULL OR tenant.end_date >= $2::date)
+                 )
+               )`,
+            [userId, dateIso],
+        );
+
+        return result.rows.map((row) => row.unit_id);
+    },
 };

@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { db } from '../db/pool';
 import { invoicesRepository } from '../db/repositories/invoices.repository';
+import { membershipsRepository } from '../db/repositories/memberships.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
 import { systemSettingsRepository } from '../db/repositories/system-settings.repository';
 import { AppError } from '../utils/app-error';
@@ -86,7 +87,7 @@ export const billingService = {
 
         const grouped = new Map<string, BillingEntry[]>();
         entries.forEach((entry) => {
-            const key = `${entry.userId}:${entry.unitId}`;
+            const key = entry.unitId;
             const current = grouped.get(key) || [];
             current.push(entry);
             grouped.set(key, current);
@@ -103,6 +104,14 @@ export const billingService = {
 
             for (const [, items] of grouped) {
                 const first = items[0];
+                const responsibleReferenceDate = items
+                    .map((entry) => new Date(entry.startAt).toISOString().slice(0, 10))
+                    .sort()
+                    .at(-1) || `${competence}-01`;
+                const responsibleUserId = await membershipsRepository.findBillingResponsibleUserByUnitOnDate(
+                    first.unitId,
+                    responsibleReferenceDate,
+                ) || first.userId;
                 const invoiceTotal = items.reduce((acc, entry) => {
                     if (settings.billingMode === 'PER_KWH') {
                         return acc + (entry.energyKwh * settings.pricePerKwh);
@@ -112,7 +121,7 @@ export const billingService = {
 
                 const invoice = await invoicesRepository.create({
                     competence,
-                    userId: first.userId,
+                    userId: responsibleUserId,
                     unitId: first.unitId,
                     billingMode: settings.billingMode,
                     totalAmount: Number(invoiceTotal.toFixed(2)),
@@ -137,6 +146,8 @@ export const billingService = {
                         metadata: {
                             billingMode: settings.billingMode,
                             energyKwh: entry.energyKwh,
+                            billedByUnit: true,
+                            unitId: entry.unitId,
                         },
                     }, client);
 
@@ -180,9 +191,13 @@ export const billingService = {
     },
 
     async listInvoices(userId: string, isAdmin: boolean) {
-        return isAdmin
-            ? invoicesRepository.listAll()
-            : invoicesRepository.listByUserId(userId);
+        if (isAdmin) {
+            return invoicesRepository.listAll();
+        }
+
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const accessibleUnitIds = await membershipsRepository.listAccessibleUnitIdsByUserOnDate(userId, todayIso);
+        return invoicesRepository.listByUnitIds(accessibleUnitIds);
     },
 
     async getInvoiceById(id: string, userId: string, isAdmin: boolean) {
@@ -191,8 +206,18 @@ export const billingService = {
             throw new AppError('Fatura nao encontrada.', 404);
         }
 
-        if (!isAdmin && invoice.userId !== userId) {
-            throw new AppError('Acesso negado para consultar esta fatura.', 403);
+        if (!isAdmin) {
+            if (!invoice.unitId) {
+                if (invoice.userId !== userId) {
+                    throw new AppError('Acesso negado para consultar esta fatura.', 403);
+                }
+            } else {
+                const todayIso = new Date().toISOString().slice(0, 10);
+                const accessibleUnitIds = await membershipsRepository.listAccessibleUnitIdsByUserOnDate(userId, todayIso);
+                if (!accessibleUnitIds.includes(invoice.unitId)) {
+                    throw new AppError('Acesso negado para consultar esta fatura.', 403);
+                }
+            }
         }
 
         const items = await invoicesRepository.listItemsByInvoiceId(id);

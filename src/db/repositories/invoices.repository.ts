@@ -125,6 +125,36 @@ export const invoicesRepository = {
         }));
     },
 
+    async listByUnitIds(unitIds: string[]): Promise<InvoiceView[]> {
+        if (unitIds.length === 0) {
+            return [];
+        }
+
+        const result = await db.query<InvoiceView & { total_amount_text: string }>(
+            `SELECT i.id,
+                    i.competence,
+                    i.user_id AS "userId",
+                    us.name AS "userName",
+                    i.unit_id AS "unitId",
+                    u.name AS "unitName",
+                    i.billing_mode AS "billingMode",
+                    i.total_amount::text AS "total_amount_text",
+                    i.generated_at AS "generatedAt",
+                    i.created_at AS "createdAt"
+             FROM invoices i
+             INNER JOIN users us ON us.id = i.user_id
+             LEFT JOIN units u ON u.id = i.unit_id
+             WHERE i.unit_id = ANY($1::uuid[])
+             ORDER BY i.competence DESC, u.name, us.name`,
+            [unitIds],
+        );
+
+        return result.rows.map((row) => ({
+            ...row,
+            totalAmount: mapInvoiceTotal(row.total_amount_text),
+        }));
+    },
+
     async findById(id: string): Promise<InvoiceView | null> {
         const result = await db.query<InvoiceView & { total_amount_text: string }>(
             `SELECT i.id,
