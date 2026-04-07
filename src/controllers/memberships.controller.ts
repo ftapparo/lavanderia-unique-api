@@ -17,6 +17,7 @@ export const membershipsController = {
         const membership = await membershipsService.create({
             userId: String(req.body?.userId || ''),
             unitId: String(req.body?.unitId || ''),
+            slotPosition: req.body?.slotPosition !== undefined ? Number(req.body.slotPosition) : undefined,
             profile: String(req.body?.profile || ''),
             startDate: String(req.body?.startDate || ''),
             endDate: req.body?.endDate ? String(req.body.endDate) : null,
@@ -28,6 +29,7 @@ export const membershipsController = {
 
     async update(req: Request, res: Response) {
         const membership = await membershipsService.update(String(req.params.id), {
+            slotPosition: req.body?.slotPosition !== undefined ? Number(req.body.slotPosition) : undefined,
             profile: req.body?.profile ? String(req.body.profile) : undefined,
             startDate: req.body?.startDate ? String(req.body.startDate) : undefined,
             endDate: req.body?.endDate !== undefined

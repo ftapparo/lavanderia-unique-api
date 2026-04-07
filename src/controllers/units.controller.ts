@@ -38,4 +38,27 @@ export const unitsController = {
         await unitsService.remove(String(req.params.id || ''), String(req.auth?.userId));
         res.ok({ id: String(req.params.id || ''), removed: true });
     },
+
+    async getMembershipSlots(req: Request, res: Response) {
+        const slots = await unitsService.getMembershipSlots(String(req.params.id || ''));
+        res.ok(slots);
+    },
+
+    async saveMembershipSlots(req: Request, res: Response) {
+        const bodySlots = Array.isArray(req.body?.slots) ? req.body.slots : [];
+        const slots = await unitsService.saveMembershipSlots(
+            String(req.params.id || ''),
+            bodySlots.map((slot: Record<string, unknown>) => ({
+                slotPosition: Number(slot.slotPosition),
+                userId: slot.userId ? String(slot.userId) : null,
+                profile: slot.profile ? String(slot.profile) : null,
+                startDate: slot.startDate ? String(slot.startDate) : null,
+                endDate: slot.endDate ? String(slot.endDate) : null,
+                active: typeof slot.active === 'boolean' ? slot.active : true,
+            })),
+            String(req.auth?.userId),
+        );
+
+        res.ok(slots);
+    },
 };

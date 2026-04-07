@@ -1,19 +1,23 @@
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
+CREATE SEQUENCE IF NOT EXISTS machines_number_seq START WITH 1 INCREMENT BY 1;
+
 CREATE TABLE IF NOT EXISTS machines (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    unit_id UUID NOT NULL REFERENCES units(id),
+    number INTEGER NOT NULL DEFAULT nextval('machines_number_seq'),
+    brand VARCHAR(120) NOT NULL,
+    model VARCHAR(120) NOT NULL,
     name VARCHAR(120) NOT NULL,
     type VARCHAR(20) NOT NULL CHECK (type IN ('WASHER', 'DRYER')),
     tuya_device_id VARCHAR(120),
     active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_machines_number UNIQUE (number)
 );
 
 CREATE TABLE IF NOT EXISTS machine_pairs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    unit_id UUID NOT NULL REFERENCES units(id),
     name VARCHAR(120) NOT NULL,
     washer_machine_id UUID NOT NULL REFERENCES machines(id),
     dryer_machine_id UUID NOT NULL REFERENCES machines(id),
@@ -21,7 +25,7 @@ CREATE TABLE IF NOT EXISTS machine_pairs (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT chk_machine_pairs_distinct CHECK (washer_machine_id <> dryer_machine_id),
-    CONSTRAINT uq_machine_pairs_name UNIQUE (unit_id, name),
+    CONSTRAINT uq_machine_pairs_name UNIQUE (name),
     CONSTRAINT uq_machine_pairs_washer UNIQUE (washer_machine_id),
     CONSTRAINT uq_machine_pairs_dryer UNIQUE (dryer_machine_id)
 );
@@ -45,8 +49,6 @@ CREATE TABLE IF NOT EXISTS reservations (
     ) WHERE (status IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_machines_unit_id ON machines(unit_id);
-CREATE INDEX IF NOT EXISTS idx_machine_pairs_unit_id ON machine_pairs(unit_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_user_id ON reservations(user_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_machine_pair_id ON reservations(machine_pair_id);
 CREATE INDEX IF NOT EXISTS idx_reservations_start_at ON reservations(start_at);

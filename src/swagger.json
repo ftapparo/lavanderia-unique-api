@@ -272,6 +272,78 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "Autentica??o"
+        ],
+        "summary": "Atualizar perfil do usu?rio autenticado",
+        "description": "Permite ao usu?rio autenticado atualizar e-mail, telefone e foto de perfil.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Perfil atualizado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUser"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados inv?lidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "N?o autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de e-mail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/api/units": {
@@ -1836,6 +1908,24 @@
               }
             }
           },
+          "400": {
+            "description": "Filtro invalido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
           "401": {
             "description": "Nao autenticado.",
             "content": {
@@ -1872,7 +1962,54 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Busca por nome ou CPF/CNPJ.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unitId",
+            "in": "query",
+            "required": false,
+            "description": "Filtra usuarios elegiveis para vinculacao na unidade (exclui ja vinculados ativos na unidade).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "slotPosition",
+            "in": "query",
+            "required": false,
+            "description": "Posicao de vinculo alvo (1, 2 ou 3).",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3
+            }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "required": false,
+            "description": "Perfil de vinculo alvo para filtrar usuarios elegiveis.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROPRIETARIO",
+                "LOCATARIO",
+                "HOSPEDE",
+                "ADMINISTRADOR",
+                "SUPER"
+              ]
+            }
+          }
+        ]
       }
     },
     "/v1/api/reservations/{id}/check-in": {
@@ -3100,6 +3237,284 @@
           }
         }
       }
+    },
+    "/v1/api/units/{id}/membership-slots": {
+      "get": {
+        "tags": [
+          "Unidades"
+        ],
+        "summary": "Listar vinculos por posicao da unidade",
+        "description": "Retorna os 3 slots de vinculo da unidade, com vinculo atual e historico resumido por posicao.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da unidade.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Slots retornados com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMembershipSlots"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Unidades"
+        ],
+        "summary": "Salvar vinculos por posicao da unidade",
+        "description": "Salva atomicamente os 3 slots de vinculo da unidade preservando historico. Regras: slot 1 obrigatorio e PROPRIETARIO, nao permite usuario repetido entre slots ativos, slot 3 nao aceita ADMINISTRADOR, troca de titular exige slots 2 e 3 vazios e remocao de ADMINISTRADOR no slot 2 exige slot 3 vazio.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador da unidade.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveUnitMembershipSlotsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Slots atualizados com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMembershipSlots"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "409": {
+            "description": "Conflito de regra de vinculo (duplicidade, ordem de remocao ou troca de titular).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Solicitar recuperacao de senha",
+        "description": "Recebe e-mail ou CPF, gera um PIN temporario e envia por e-mail quando o usuario existe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Solicitacao recebida com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseForgotPassword"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/auth/change-password": {
+      "patch": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Alterar senha do usuario autenticado",
+        "description": "Quando houver PIN ativo, valida o PIN de 6 digitos. Sem PIN ativo, valida a senha atual.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Senha alterada com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePasswordChanged"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados invalidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Credencial atual invalida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Redefinir senha por PIN",
+        "description": "Valida e-mail/CPF + PIN de 6 digitos e define nova senha.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordByPinRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Senha redefinida com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePasswordChanged"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          },
+          "400": {
+            "description": "Dados invalidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "PIN invalido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3148,7 +3563,8 @@
             "type": "string"
           },
           "cpf": {
-            "type": "string"
+            "type": "string",
+            "description": "Documento do usuario. Aceita CPF (11 digitos) ou CNPJ (14 digitos)."
           },
           "email": {
             "type": "string"
@@ -3159,6 +3575,24 @@
           },
           "role": {
             "type": "string"
+          },
+          "cargo": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasProfilePhoto": {
+            "type": "boolean"
+          },
+          "profilePhotoBase64": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoMime": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasPin": {
+            "type": "boolean"
           }
         }
       },
@@ -3173,6 +3607,9 @@
           },
           "user": {
             "$ref": "#/components/schemas/User"
+          },
+          "mustChangePassword": {
+            "type": "boolean"
           }
         }
       },
@@ -3252,6 +3689,20 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "slotPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "userCpf": {
+            "type": "string",
+            "nullable": true,
+            "description": "Documento do usuario vinculado (CPF ou CNPJ)."
           }
         }
       },
@@ -3268,7 +3719,8 @@
             "type": "string"
           },
           "cpf": {
-            "type": "string"
+            "type": "string",
+            "description": "Documento do usuario. Aceita CPF (11 digitos) ou CNPJ (14 digitos)."
           },
           "email": {
             "type": "string"
@@ -3364,6 +3816,11 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "slotPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
           }
         }
       },
@@ -3391,6 +3848,11 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "slotPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
           }
         }
       },
@@ -3883,7 +4345,8 @@
             "type": "string"
           },
           "cpf": {
-            "type": "string"
+            "type": "string",
+            "description": "Documento do usuario. Aceita CPF (11 digitos) ou CNPJ (14 digitos)."
           },
           "email": {
             "type": "string"
@@ -3896,8 +4359,33 @@
             "type": "string",
             "enum": [
               "USER",
-              "ADMIN"
+              "ADMIN",
+              "SUPER"
             ]
+          },
+          "cargo": {
+            "type": "string",
+            "nullable": true
+          },
+          "mustChangePassword": {
+            "type": "boolean"
+          },
+          "hasProfilePhoto": {
+            "type": "boolean"
+          },
+          "profilePhotoBase64": {
+            "type": "string",
+            "nullable": true,
+            "description": "Imagem de perfil em base64 (retornada apenas em consultas de detalhe)."
+          },
+          "profilePhotoMime": {
+            "type": "string",
+            "nullable": true,
+            "description": "MIME da imagem de perfil (ex.: image/jpeg)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
@@ -4708,6 +5196,226 @@
             }
           }
         ]
+      },
+      "MembershipSlot": {
+        "type": "object",
+        "properties": {
+          "slotPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "current": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Membership"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Membership"
+            }
+          }
+        }
+      },
+      "SaveUnitMembershipSlot": {
+        "type": "object",
+        "required": [
+          "slotPosition"
+        ],
+        "properties": {
+          "slotPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "profile": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "PROPRIETARIO",
+              "LOCATARIO",
+              "HOSPEDE",
+              "ADMINISTRADOR",
+              "SUPER",
+              null
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SaveUnitMembershipSlotsRequest": {
+        "type": "object",
+        "required": [
+          "slots"
+        ],
+        "properties": {
+          "slots": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 3,
+            "items": {
+              "$ref": "#/components/schemas/SaveUnitMembershipSlot"
+            }
+          }
+        }
+      },
+      "ApiResponseMembershipSlots": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MembershipSlot"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "UpdateMeRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoBase64": {
+            "type": "string",
+            "nullable": true,
+            "description": "Imagem base64 sem o prefixo data:."
+          },
+          "profilePhotoMime": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "image/jpeg",
+              "image/jpg",
+              "image/png",
+              "image/webp"
+            ]
+          }
+        }
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "required": [
+          "identity"
+        ],
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "E-mail ou CPF do usuario."
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "description": "Senha atual ou PIN de 6 digitos quando houver PIN ativo."
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 6
+          }
+        }
+      },
+      "ApiResponseForgotPassword": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "requested": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponsePasswordChanged": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "changed": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ResetPasswordByPinRequest": {
+        "type": "object",
+        "required": [
+          "identity",
+          "pin",
+          "newPassword"
+        ],
+        "properties": {
+          "identity": {
+            "type": "string",
+            "description": "E-mail ou CPF do usuario."
+          },
+          "pin": {
+            "type": "string",
+            "description": "PIN de 6 digitos numericos."
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 6
+          }
+        }
       }
     },
     "headers": {

@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { db } from './pool';
-import { runDevSeed } from './run-seed-dev';
+import { db } from '../src/db/pool';
 
 async function run(): Promise<void> {
     await db.query(
@@ -17,7 +16,7 @@ async function run(): Promise<void> {
     );
     const appliedSet = new Set(applied.rows.map((row) => row.filename));
 
-    const migrationsDir = path.resolve(__dirname, 'migrations');
+    const migrationsDir = path.resolve(__dirname, '../src/db/migrations');
     const files = fs.readdirSync(migrationsDir)
         .filter((name) => name.endsWith('.sql'))
         .sort();
@@ -46,10 +45,6 @@ async function run(): Promise<void> {
             client.release();
         }
     }
-
-    if ((process.env.NODE_ENV || 'development') === 'development') {
-        await runDevSeed();
-    }
 }
 
 run()
@@ -62,3 +57,4 @@ run()
         await db.close();
         process.exit(1);
     });
+

@@ -1,4 +1,4 @@
-import { db } from './pool';
+import { db } from '../src/db/pool';
 
 async function run(): Promise<void> {
     await db.query('DROP SCHEMA IF EXISTS public CASCADE;');
@@ -18,3 +18,4 @@ run()
         await db.close();
         process.exit(1);
     });
+

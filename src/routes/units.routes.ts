@@ -10,5 +10,7 @@ router.get('/units', authMiddleware, asyncHandler(unitsController.list));
 router.post('/units', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.create));
 router.patch('/units/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.update));
 router.delete('/units/:id', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.remove));
+router.get('/units/:id/membership-slots', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.getMembershipSlots));
+router.put('/units/:id/membership-slots', authMiddleware, requireRole('ADMIN'), asyncHandler(unitsController.saveMembershipSlots));
 
 export default router;

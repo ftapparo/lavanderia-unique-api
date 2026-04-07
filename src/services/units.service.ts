@@ -2,6 +2,7 @@ import { unitsRepository } from '../db/repositories/units.repository';
 import type { UnitView } from '../types/domain.types';
 import { AppError } from '../utils/app-error';
 import { auditLogsRepository } from '../db/repositories/audit-logs.repository';
+import { membershipsService } from './memberships.service';
 
 export const unitsService = {
     async list(userId: string, isAdmin: boolean): Promise<UnitView[]> {
@@ -38,8 +39,12 @@ export const unitsService = {
                 allowGuestReservations,
             });
         } catch (error) {
-            if ((error as { code?: string }).code === '23505') {
+            const pgError = error as { code?: string; constraint?: string };
+            if (pgError.code === '23505' && pgError.constraint === 'uq_units_floor_unit_number') {
                 throw new AppError('Unidade desse andar ja cadastrada.', 409);
+            }
+            if (pgError.code === '23505' && pgError.constraint === 'units_code_key') {
+                throw new AppError('Falha ao gerar codigo da unidade. Tente novamente.', 409);
             }
             throw error;
         }
@@ -109,8 +114,12 @@ export const unitsService = {
                 allowGuestReservations: nextAllowGuestReservations,
             });
         } catch (error) {
-            if ((error as { code?: string }).code === '23505') {
+            const pgError = error as { code?: string; constraint?: string };
+            if (pgError.code === '23505' && pgError.constraint === 'uq_units_floor_unit_number') {
                 throw new AppError('Unidade desse andar ja cadastrada.', 409);
+            }
+            if (pgError.code === '23505' && pgError.constraint === 'units_code_key') {
+                throw new AppError('Falha ao gerar codigo da unidade. Tente novamente.', 409);
             }
             throw error;
         }
@@ -170,5 +179,20 @@ export const unitsService = {
             entityId: id,
             payload: {},
         });
+    },
+
+    async getMembershipSlots(unitId: string) {
+        return membershipsService.listUnitSlots(unitId);
+    },
+
+    async saveMembershipSlots(unitId: string, slots: Array<{
+        slotPosition: number;
+        userId: string | null;
+        profile: string | null;
+        startDate: string | null;
+        endDate?: string | null;
+        active?: boolean;
+    }>, actorUserId: string) {
+        return membershipsService.saveUnitSlots(unitId, slots, actorUserId);
     },
 };

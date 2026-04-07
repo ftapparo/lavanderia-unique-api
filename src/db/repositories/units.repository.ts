@@ -3,14 +3,33 @@ import type { UnitRecord, UnitView } from '../../types/domain.types';
 
 export const unitsRepository = {
     async create(input: { name: string; floor: number; unitNumber: number; active: boolean; allowGuestReservations?: boolean }): Promise<UnitRecord> {
-        const result = await db.query<UnitRecord>(
-            `INSERT INTO units (name, code, floor, unit_number, active, allow_guest_reservations)
-             VALUES ($1, nextval('units_code_seq')::TEXT, $2, $3, $4, $5)
-             RETURNING id, name, code, floor, unit_number, active, allow_guest_reservations, created_at, updated_at`,
-            [input.name, input.floor, input.unitNumber, input.active, input.allowGuestReservations ?? true],
-        );
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            try {
+                const result = await db.query<UnitRecord>(
+                    `INSERT INTO units (name, code, floor, unit_number, active, allow_guest_reservations)
+                     VALUES ($1, nextval('units_code_seq')::TEXT, $2, $3, $4, $5)
+                     RETURNING id, name, code, floor, unit_number, active, allow_guest_reservations, created_at, updated_at`,
+                    [input.name, input.floor, input.unitNumber, input.active, input.allowGuestReservations ?? true],
+                );
 
-        return result.rows[0];
+                return result.rows[0];
+            } catch (error) {
+                const pgError = error as { code?: string; constraint?: string };
+                if (pgError.code === '23505' && pgError.constraint === 'units_code_key' && attempt < 2) {
+                    await db.query(
+                        `SELECT setval(
+                            'units_code_seq',
+                            COALESCE((SELECT MAX(code::bigint) FROM units WHERE code ~ '^[0-9]+$'), 0),
+                            true
+                        )`,
+                    );
+                    continue;
+                }
+                throw error;
+            }
+        }
+
+        throw new Error('Falha ao criar unidade.');
     },
 
     async findById(id: string): Promise<UnitRecord | null> {

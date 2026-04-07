@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Flavio/.claude/projects/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Flavio\\.claude\\projects\\d--Git-Lavanderia-Unique-API"
+    ]
+  }
+}

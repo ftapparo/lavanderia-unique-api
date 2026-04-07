@@ -6,10 +6,30 @@ export type UserRecord = {
     cpf: string;
     email: string;
     phone: string | null;
-    password_hash: string;
+    password_hash: string | null;
+    pin_hash: string | null;
     role: UserRole;
+    cargo: string | null;
+    must_change_password: boolean;
+    profile_photo: Buffer | null;
+    profile_photo_mime: string | null;
     created_at: string;
     updated_at: string;
+};
+
+export type UserView = {
+    id: string;
+    name: string;
+    cpf: string;
+    email: string;
+    phone: string | null;
+    role: UserRole;
+    cargo: string | null;
+    mustChangePassword: boolean;
+    hasProfilePhoto?: boolean;
+    profilePhotoBase64?: string | null;
+    profilePhotoMime?: string | null;
+    createdAt: string;
 };
 
 export type UnitRecord = {
@@ -28,6 +48,7 @@ export type UnitMembershipRecord = {
     id: string;
     user_id: string;
     unit_id: string;
+    slot_position: number;
     profile: string;
     start_date: string;
     end_date: string | null;
@@ -58,13 +79,22 @@ export type AuditLogRecord = {
 export type MembershipView = {
     id: string;
     userId: string;
+    userName?: string;
+    userCpf?: string;
     unitId: string;
     unitName: string;
     unitCode: string;
+    slotPosition: number;
     profile: string;
     startDate: string;
     endDate: string | null;
     active: boolean;
+};
+
+export type MembershipSlotView = {
+    slotPosition: 1 | 2 | 3;
+    current: MembershipView | null;
+    history: MembershipView[];
 };
 
 export type MembershipProfileView = {

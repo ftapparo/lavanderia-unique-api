@@ -28,8 +28,46 @@ export const authController = {
         res.ok(result);
     },
 
+    async forgotPassword(req: Request, res: Response) {
+        const result = await authService.forgotPassword({
+            identity: String(req.body?.identity || req.body?.email || req.body?.cpf || ''),
+        });
+        res.ok(result);
+    },
+
+    async resetPassword(req: Request, res: Response) {
+        const result = await authService.resetPasswordByPin({
+            identity: String(req.body?.identity || req.body?.email || req.body?.cpf || ''),
+            pin: String(req.body?.pin || ''),
+            newPassword: String(req.body?.newPassword || ''),
+        });
+        res.ok(result);
+    },
+
     async me(req: Request, res: Response) {
         const result = await authService.me(String(req.auth?.userId || ''));
         res.ok(result);
+    },
+
+    async updateMe(req: Request, res: Response) {
+        const result = await authService.updateMe(String(req.auth?.userId || ''), {
+            email: req.body?.email !== undefined ? String(req.body.email) : undefined,
+            phone: req.body?.phone !== undefined ? (req.body.phone ? String(req.body.phone) : null) : undefined,
+            profilePhotoBase64: req.body?.profilePhotoBase64 !== undefined
+                ? (req.body.profilePhotoBase64 ? String(req.body.profilePhotoBase64) : null)
+                : undefined,
+            profilePhotoMime: req.body?.profilePhotoMime !== undefined
+                ? (req.body.profilePhotoMime ? String(req.body.profilePhotoMime) : null)
+                : undefined,
+        });
+        res.ok(result);
+    },
+
+    async changePassword(req: Request, res: Response) {
+        await authService.changePassword(String(req.auth?.userId || ''), {
+            currentPassword: String(req.body?.currentPassword || ''),
+            newPassword: String(req.body?.newPassword || ''),
+        });
+        res.ok({ changed: true });
     },
 };

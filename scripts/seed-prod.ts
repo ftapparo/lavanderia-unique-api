@@ -1,7 +1,7 @@
-import { db } from './pool';
-import { runDevSeed } from './run-seed-dev';
+import { db } from '../src/db/pool';
+import { runProdSeed } from './run-seed-prod';
 
-runDevSeed()
+runProdSeed()
     .then(async () => {
         await db.close();
         process.exit(0);
