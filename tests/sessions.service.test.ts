@@ -23,6 +23,8 @@ describe('sessions.service', () => {
         jest.spyOn(systemSettingsRepository, 'get').mockResolvedValue({
             checkinWindowBeforeMinutes: 15,
             checkinWindowAfterMinutes: 30,
+            reservationDurationHours: 2,
+            reservationStartMode: 'FULL_HOUR',
             overtimeThresholdWatts: 15,
             consumptionPollSeconds: 30,
             billingMode: 'PER_USE',
@@ -55,6 +57,8 @@ describe('sessions.service', () => {
         jest.spyOn(systemSettingsRepository, 'get').mockResolvedValue({
             checkinWindowBeforeMinutes: 15,
             checkinWindowAfterMinutes: 30,
+            reservationDurationHours: 2,
+            reservationStartMode: 'FULL_HOUR',
             overtimeThresholdWatts: 15,
             consumptionPollSeconds: 30,
             billingMode: 'PER_USE',

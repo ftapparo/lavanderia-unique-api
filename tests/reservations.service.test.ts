@@ -3,6 +3,7 @@ import { machinePairsRepository } from '../src/db/repositories/machine-pairs.rep
 import { membershipsRepository } from '../src/db/repositories/memberships.repository';
 import { reservationsRepository } from '../src/db/repositories/reservations.repository';
 import { auditLogsRepository } from '../src/db/repositories/audit-logs.repository';
+import { systemSettingsRepository } from '../src/db/repositories/system-settings.repository';
 import { unitsRepository } from '../src/db/repositories/units.repository';
 
 describe('reservations.service', () => {
@@ -12,10 +13,23 @@ describe('reservations.service', () => {
 
     beforeEach(() => {
         jest.restoreAllMocks();
+        jest.spyOn(systemSettingsRepository, 'get').mockResolvedValue({
+            checkinWindowBeforeMinutes: 15,
+            checkinWindowAfterMinutes: 30,
+            reservationDurationHours: 2,
+            reservationStartMode: 'FULL_HOUR',
+            overtimeThresholdWatts: 15,
+            consumptionPollSeconds: 30,
+            billingMode: 'PER_USE',
+            pricePerUse: 0,
+            pricePerKwh: 0,
+            updatedByUserId: null,
+            updatedAt: new Date().toISOString(),
+        });
     });
 
-    it('creates reservation with fixed 2h duration', async () => {
-        const startAt = '2026-03-03T10:00:00.000Z';
+    it('creates reservation with configured duration', async () => {
+        const startAt = '2026-03-03T11:00:00.000Z';
 
         jest.spyOn(unitsRepository, 'findById').mockResolvedValue({
             id: unitId,
@@ -57,7 +71,7 @@ describe('reservations.service', () => {
             machine_pair_id: pairId,
             user_id: userId,
             start_at: startAt,
-            end_at: '2026-03-03T12:00:00.000Z',
+            end_at: '2026-03-03T13:00:00.000Z',
             status: 'CONFIRMED',
             canceled_at: null,
             canceled_by_user_id: null,
@@ -74,7 +88,7 @@ describe('reservations.service', () => {
             unitId,
             userId,
             startAt,
-            endAt: '2026-03-03T12:00:00.000Z',
+            endAt: '2026-03-03T13:00:00.000Z',
             status: 'CONFIRMED',
         }));
     });
@@ -106,7 +120,7 @@ describe('reservations.service', () => {
         await expect(reservationsService.create({
             unitId,
             machinePairId: pairId,
-            startAt: '2026-03-03T10:00:00.000Z',
+            startAt: '2026-03-03T11:00:00.000Z',
         }, userId, false)).rejects.toMatchObject({ status: 403 });
     });
 
@@ -149,8 +163,31 @@ describe('reservations.service', () => {
         await expect(reservationsService.create({
             unitId,
             machinePairId: pairId,
-            startAt: '2026-03-03T10:00:00.000Z',
+            startAt: '2026-03-03T11:00:00.000Z',
         }, userId, false)).rejects.toMatchObject({ status: 409 });
+    });
+
+    it('blocks reservation outside configured slot alignment', async () => {
+        jest.spyOn(unitsRepository, 'findById').mockResolvedValue({
+            id: unitId,
+            name: 'Unidade 101',
+            code: '101',
+            floor: 1,
+            unit_number: 1,
+            active: true,
+            allow_guest_reservations: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        });
+
+        await expect(reservationsService.create({
+            unitId,
+            machinePairId: pairId,
+            startAt: '2026-03-03T10:00:00.000Z',
+        }, userId, false)).rejects.toMatchObject({
+            status: 400,
+            message: 'Reserva deve respeitar intervalos de 2 hora(s), iniciando a partir de 00:00.',
+        });
     });
 
     it('blocks cancel by non-owner non-admin', async () => {

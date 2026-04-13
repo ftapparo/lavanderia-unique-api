@@ -29,6 +29,9 @@ type BillingEntry = {
     energyKwh: number;
 };
 
+type BillingMode = 'PER_USE' | 'PER_KWH';
+type InvoiceBillingMode = BillingMode | 'MIXED';
+
 const toCsv = (headers: string[], rows: Array<Array<string | number>>): string => {
     const encode = (value: string | number): string => {
         const text = String(value ?? '');
@@ -45,9 +48,9 @@ const toCsv = (headers: string[], rows: Array<Array<string | number>>): string =
 export const billingService = {
     async run(input: { competence?: string }) {
         const competence = toCompetence(input.competence);
-        const settings = await systemSettingsRepository.get();
         const finishedReservations = await reservationsRepository.listFinishedByCompetence(competence);
         if (finishedReservations.length === 0) {
+            const settings = await systemSettingsRepository.get();
             return {
                 competence,
                 billingMode: settings.billingMode,
@@ -97,6 +100,8 @@ export const billingService = {
         let invoicesCreated = 0;
         let itemsCreated = 0;
         let totalAmount = 0;
+        const runBillingModes = new Set<BillingMode>();
+        const settingsByStartAt = new Map<string, Awaited<ReturnType<typeof systemSettingsRepository.getAsOf>>>();
 
         try {
             await client.query('BEGIN');
@@ -112,25 +117,43 @@ export const billingService = {
                     first.unitId,
                     responsibleReferenceDate,
                 ) || first.userId;
-                const invoiceTotal = items.reduce((acc, entry) => {
+                const itemSettings = await Promise.all(items.map(async (entry) => {
+                    if (settingsByStartAt.has(entry.startAt)) {
+                        return settingsByStartAt.get(entry.startAt)!;
+                    }
+                    const asOf = await systemSettingsRepository.getAsOf(entry.startAt);
+                    settingsByStartAt.set(entry.startAt, asOf);
+                    return asOf;
+                }));
+
+                const invoiceModes = new Set<BillingMode>();
+                const invoiceTotal = items.reduce((acc, entry, index) => {
+                    const settings = itemSettings[index];
+                    invoiceModes.add(settings.billingMode);
+                    runBillingModes.add(settings.billingMode);
                     if (settings.billingMode === 'PER_KWH') {
                         return acc + (entry.energyKwh * settings.pricePerKwh);
                     }
                     return acc + settings.pricePerUse;
                 }, 0);
 
+                const invoiceBillingMode: InvoiceBillingMode = invoiceModes.size === 1
+                    ? Array.from(invoiceModes)[0]
+                    : 'MIXED';
+
                 const invoice = await invoicesRepository.create({
                     competence,
                     userId: responsibleUserId,
                     unitId: first.unitId,
-                    billingMode: settings.billingMode,
+                    billingMode: invoiceBillingMode,
                     totalAmount: Number(invoiceTotal.toFixed(2)),
                 }, client);
 
                 invoicesCreated += 1;
                 totalAmount += Number(invoice.total_amount);
 
-                for (const entry of items) {
+                for (const [index, entry] of items.entries()) {
+                    const settings = itemSettings[index];
                     const quantity = settings.billingMode === 'PER_KWH' ? entry.energyKwh : 1;
                     const unitPrice = settings.billingMode === 'PER_KWH' ? settings.pricePerKwh : settings.pricePerUse;
                     const lineTotal = Number((quantity * unitPrice).toFixed(2));
@@ -163,9 +186,13 @@ export const billingService = {
             client.release();
         }
 
+        const responseBillingMode: InvoiceBillingMode = runBillingModes.size === 1
+            ? Array.from(runBillingModes)[0]
+            : 'MIXED';
+
         const response = {
             competence,
-            billingMode: settings.billingMode,
+            billingMode: responseBillingMode,
             invoicesCreated,
             itemsCreated,
             totalAmount: Number(totalAmount.toFixed(2)),

@@ -2,6 +2,7 @@ import { auditLogsRepository } from '../db/repositories/audit-logs.repository';
 import { machinePairsRepository } from '../db/repositories/machine-pairs.repository';
 import { membershipsRepository } from '../db/repositories/memberships.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
+import { systemSettingsRepository } from '../db/repositories/system-settings.repository';
 import { unitsRepository } from '../db/repositories/units.repository';
 import { usersRepository } from '../db/repositories/users.repository';
 import type { ReservationBusyView, ReservationRecord, ReservationView } from '../types/domain.types';
@@ -12,7 +13,17 @@ type PgErrorLike = {
     detail?: string;
 };
 
-const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+const RESERVATION_TIME_ZONE = 'America/Sao_Paulo';
+const reservationDateTimeFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: RESERVATION_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+});
 
 const toDate = (value: string): Date => {
     const parsed = new Date(value);
@@ -24,11 +35,68 @@ const toDate = (value: string): Date => {
 
 const toIso = (date: Date): string => date.toISOString();
 
+const getReservationLocalParts = (date: Date): {
+    year: string;
+    month: string;
+    day: string;
+    hour: number;
+    minute: number;
+    second: number;
+} => {
+    const mapped = Object.fromEntries(
+        reservationDateTimeFormatter
+            .formatToParts(date)
+            .filter((part) => part.type !== 'literal')
+            .map((part) => [part.type, part.value]),
+    ) as Record<string, string>;
+
+    return {
+        year: mapped.year,
+        month: mapped.month,
+        day: mapped.day,
+        hour: Number(mapped.hour),
+        minute: Number(mapped.minute),
+        second: Number(mapped.second),
+    };
+};
+
+const getReservationLocalDateIso = (date: Date): string => {
+    const parts = getReservationLocalParts(date);
+    return `${parts.year}-${parts.month}-${parts.day}`;
+};
+
+const validateReservationStart = (
+    startAt: Date,
+    settings: {
+        reservationDurationHours: number;
+        reservationStartMode: 'ANY_TIME' | 'FULL_HOUR';
+    },
+) => {
+    if (!Number.isInteger(settings.reservationDurationHours) || settings.reservationDurationHours <= 0) {
+        throw new AppError('Duracao de reserva invalida na configuracao do sistema.', 500);
+    }
+
+    if (settings.reservationStartMode === 'ANY_TIME') {
+        return;
+    }
+
+    const localParts = getReservationLocalParts(startAt);
+    if (localParts.minute !== 0 || localParts.second !== 0 || startAt.getMilliseconds() !== 0) {
+        throw new AppError('Reserva deve iniciar em hora cheia conforme configuracao do sistema.', 400);
+    }
+
+    const minutesSinceDayStart = (localParts.hour * 60) + localParts.minute;
+    const durationMinutes = settings.reservationDurationHours * 60;
+    if (minutesSinceDayStart % durationMinutes !== 0) {
+        throw new AppError(`Reserva deve respeitar intervalos de ${settings.reservationDurationHours} hora(s), iniciando a partir de 00:00.`, 400);
+    }
+};
+
 const getActiveMembershipOnDate = async (userId: string, unitId: string, atDate: Date) => {
     return membershipsRepository.findActiveByUserAndUnitOnDate(
         userId,
         unitId,
-        atDate.toISOString().slice(0, 10),
+        getReservationLocalDateIso(atDate),
     );
 };
 
@@ -40,7 +108,7 @@ const mapReservationDbError = (error: unknown): never => {
     }
 
     if (pgError?.code === '23514') {
-        throw new AppError('Reserva invalida. A duracao deve ser exatamente de 2 horas.', 400, pgError.detail);
+        throw new AppError('Reserva invalida para os parametros configurados.', 400, pgError.detail);
     }
 
     throw error;
@@ -59,8 +127,11 @@ export const reservationsService = {
             throw new AppError('Unidade e par de maquinas sao obrigatorios.', 400);
         }
         const startAt = toDate(input.startAt);
-        const endAt = new Date(startAt.getTime() + TWO_HOURS_MS);
-        const reservationDateIso = startAt.toISOString().slice(0, 10);
+        const settings = await systemSettingsRepository.get();
+        const reservationDurationMs = settings.reservationDurationHours * 60 * 60 * 1000;
+        validateReservationStart(startAt, settings);
+        const endAt = new Date(startAt.getTime() + reservationDurationMs);
+        const reservationDateIso = getReservationLocalDateIso(startAt);
         const requestedUserId = input.userId?.trim() || '';
 
         const unit = await unitsRepository.findById(unitId);

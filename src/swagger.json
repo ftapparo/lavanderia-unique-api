@@ -1071,7 +1071,7 @@
           "Reservas"
         ],
         "summary": "Criar reserva",
-        "description": "Cria reserva com duracao fixa de 2 horas para um par de maquinas. Para perfil ADMIN, e possivel informar userId para reservar em nome de outro usuario.",
+        "description": "Cria reserva para um par de maquinas obedecendo a duracao e a regra de inicio configuradas no sistema. Para perfil ADMIN, e possivel informar userId para reservar em nome de outro usuario.",
         "security": [
           {
             "bearerAuth": []
@@ -2010,6 +2010,172 @@
             }
           }
         ]
+      },
+      "post": {
+        "tags": ["Usuarios"],
+        "summary": "Criar usuario",
+        "description": "Cria um novo usuario. Restrito a administradores.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "cpf", "email", "role"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "cpf": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string", "nullable": true },
+                  "role": { "type": "string", "enum": ["USER", "ADMIN", "SUPER"] },
+                  "cargo": { "type": "string", "nullable": true },
+                  "profilePhotoBase64": { "type": "string", "nullable": true },
+                  "profilePhotoMime": { "type": "string", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Usuario criado com sucesso.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseUser" } } },
+            "headers": {
+              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
+              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+            }
+          },
+          "400": {
+            "description": "Dados invalidos.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+          },
+          "409": {
+            "description": "CPF ou e-mail ja cadastrado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+          }
+        }
+      }
+    },
+    "/v1/api/users/{id}": {
+      "get": {
+        "tags": ["Usuarios"],
+        "summary": "Buscar usuario por ID",
+        "description": "Retorna dados de um usuario especifico. Restrito a administradores.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario encontrado.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseUser" } } },
+            "headers": {
+              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
+              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+            }
+          },
+          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+        }
+      },
+      "patch": {
+        "tags": ["Usuarios"],
+        "summary": "Atualizar usuario",
+        "description": "Atualiza dados de um usuario. Restrito a administradores.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "phone": { "type": "string", "nullable": true },
+                  "role": { "type": "string", "enum": ["USER", "ADMIN", "SUPER"] },
+                  "cargo": { "type": "string", "nullable": true },
+                  "profilePhotoBase64": { "type": "string", "nullable": true },
+                  "profilePhotoMime": { "type": "string", "nullable": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usuario atualizado com sucesso.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseUser" } } },
+            "headers": {
+              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
+              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+            }
+          },
+          "400": { "description": "Dados invalidos.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+        }
+      },
+      "delete": {
+        "tags": ["Usuarios"],
+        "summary": "Remover usuario",
+        "description": "Remove um usuario do sistema. Restrito a administradores.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario removido com sucesso.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } },
+            "headers": {
+              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
+              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+            }
+          },
+          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "409": { "description": "Usuario possui vinculos ativos.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+        }
+      }
+    },
+    "/v1/api/users/{id}/reset-password": {
+      "patch": {
+        "tags": ["Usuarios"],
+        "summary": "Resetar senha de usuario",
+        "description": "Gera nova senha temporaria para o usuario. Restrito a administradores.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Senha resetada com sucesso.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } },
+            "headers": {
+              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
+              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+            }
+          },
+          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
+          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+        }
       }
     },
     "/v1/api/reservations/{id}/check-in": {
@@ -2460,7 +2626,7 @@
           "Configuracoes do Sistema"
         ],
         "summary": "Consultar configuracoes operacionais",
-        "description": "Retorna parametros de check-in, overtime, polling e cobranca.",
+        "description": "Retorna parametros de reserva, check-in, overtime, polling e cobranca.",
         "security": [
           {
             "bearerAuth": []
@@ -2510,7 +2676,7 @@
           "Configuracoes do Sistema"
         ],
         "summary": "Atualizar configuracoes operacionais",
-        "description": "Atualiza parametros operacionais do sistema. Endpoint restrito a administradores.",
+        "description": "Atualiza parametros de reserva, check-in, overtime, polling e cobranca do sistema. Endpoint restrito a administradores.",
         "security": [
           {
             "bearerAuth": []
@@ -4632,6 +4798,16 @@
           "checkinWindowAfterMinutes": {
             "type": "integer"
           },
+          "reservationDurationHours": {
+            "type": "integer"
+          },
+          "reservationStartMode": {
+            "type": "string",
+            "enum": [
+              "ANY_TIME",
+              "FULL_HOUR"
+            ]
+          },
           "overtimeThresholdWatts": {
             "type": "number"
           },
@@ -4670,6 +4846,16 @@
           },
           "checkinWindowAfterMinutes": {
             "type": "integer"
+          },
+          "reservationDurationHours": {
+            "type": "integer"
+          },
+          "reservationStartMode": {
+            "type": "string",
+            "enum": [
+              "ANY_TIME",
+              "FULL_HOUR"
+            ]
           },
           "overtimeThresholdWatts": {
             "type": "number"
@@ -4712,7 +4898,8 @@
             "type": "string",
             "enum": [
               "PER_USE",
-              "PER_KWH"
+              "PER_KWH",
+              "MIXED"
             ]
           },
           "invoicesCreated": {
@@ -4756,7 +4943,8 @@
             "type": "string",
             "enum": [
               "PER_USE",
-              "PER_KWH"
+              "PER_KWH",
+              "MIXED"
             ]
           },
           "totalAmount": {

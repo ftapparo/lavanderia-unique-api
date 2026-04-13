@@ -17,7 +17,7 @@ export const invoicesRepository = {
         competence: string;
         userId: string;
         unitId: string | null;
-        billingMode: 'PER_USE' | 'PER_KWH';
+        billingMode: 'PER_USE' | 'PER_KWH' | 'MIXED';
         totalAmount: number;
     }, client?: PoolClient): Promise<InvoiceRecord> {
         const sql = `INSERT INTO invoices (

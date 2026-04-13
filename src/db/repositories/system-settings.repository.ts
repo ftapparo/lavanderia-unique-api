@@ -1,113 +1,215 @@
+import type { PoolClient } from 'pg';
 import { db } from '../pool';
-import type { SystemSettingsRecord, SystemSettingsView } from '../../types/domain.types';
+import type {
+    SettingsVariableName,
+    SettingsVariableRecord,
+    SystemSettingsView,
+} from '../../types/domain.types';
 
-const mapView = (row: SystemSettingsRecord): SystemSettingsView => ({
-    checkinWindowBeforeMinutes: row.checkin_window_before_minutes,
-    checkinWindowAfterMinutes: row.checkin_window_after_minutes,
-    overtimeThresholdWatts: Number(row.overtime_threshold_watts),
-    consumptionPollSeconds: row.consumption_poll_seconds,
-    billingMode: row.billing_mode,
-    pricePerUse: Number(row.price_per_use),
-    pricePerKwh: Number(row.price_per_kwh),
-    updatedByUserId: row.updated_by_user_id,
-    updatedAt: row.updated_at,
-});
+const SETTINGS_DEFAULTS: SystemSettingsView = {
+    checkinWindowBeforeMinutes: 15,
+    checkinWindowAfterMinutes: 30,
+    reservationDurationHours: 2,
+    reservationStartMode: 'FULL_HOUR',
+    overtimeThresholdWatts: 15,
+    consumptionPollSeconds: 30,
+    billingMode: 'PER_USE',
+    pricePerUse: 0,
+    pricePerKwh: 0,
+    updatedByUserId: null,
+    updatedAt: new Date(0).toISOString(),
+};
+
+const KEY_TO_VARIABLE: Record<
+    Exclude<keyof UpdateSettingsInput, 'updatedByUserId'>,
+    SettingsVariableName
+> = {
+    checkinWindowBeforeMinutes: 'CHECKIN_WINDOW_BEFORE_MINUTES',
+    checkinWindowAfterMinutes: 'CHECKIN_WINDOW_AFTER_MINUTES',
+    reservationDurationHours: 'RESERVATION_DURATION_HOURS',
+    reservationStartMode: 'RESERVATION_START_MODE',
+    overtimeThresholdWatts: 'OVERTIME_THRESHOLD_WATTS',
+    consumptionPollSeconds: 'CONSUMPTION_POLL_SECONDS',
+    billingMode: 'BILLING_MODE',
+    pricePerUse: 'PRICE_PER_USE',
+    pricePerKwh: 'PRICE_PER_KWH',
+};
+
+type UpdateSettingsInput = {
+    checkinWindowBeforeMinutes?: number;
+    checkinWindowAfterMinutes?: number;
+    reservationDurationHours?: number;
+    reservationStartMode?: 'ANY_TIME' | 'FULL_HOUR';
+    overtimeThresholdWatts?: number;
+    consumptionPollSeconds?: number;
+    billingMode?: 'PER_USE' | 'PER_KWH';
+    pricePerUse?: number;
+    pricePerKwh?: number;
+    updatedByUserId: string;
+};
+
+const toNumber = (value: string, fallback: number): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const selectLatestMetadata = (rows: Pick<SettingsVariableRecord, 'updated_by_user_id' | 'start_at'>[]) => {
+    const latest = [...rows].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0];
+    return {
+        updatedByUserId: latest?.updated_by_user_id ?? null,
+        updatedAt: latest?.start_at ?? SETTINGS_DEFAULTS.updatedAt,
+    };
+};
+
+const mapRowsToView = (rows: SettingsVariableRecord[]): SystemSettingsView => {
+    const metadata = selectLatestMetadata(rows);
+    const byVariable = new Map<SettingsVariableName, SettingsVariableRecord>(
+        rows.map((row) => [row.variable, row]),
+    );
+
+    const reservationStartModeValue = byVariable.get('RESERVATION_START_MODE')?.value;
+    const reservationStartMode = reservationStartModeValue === 'ANY_TIME' || reservationStartModeValue === 'FULL_HOUR'
+        ? reservationStartModeValue
+        : SETTINGS_DEFAULTS.reservationStartMode;
+
+    const billingModeValue = byVariable.get('BILLING_MODE')?.value;
+    const billingMode = billingModeValue === 'PER_USE' || billingModeValue === 'PER_KWH'
+        ? billingModeValue
+        : SETTINGS_DEFAULTS.billingMode;
+
+    return {
+        checkinWindowBeforeMinutes: toNumber(
+            byVariable.get('CHECKIN_WINDOW_BEFORE_MINUTES')?.value ?? '',
+            SETTINGS_DEFAULTS.checkinWindowBeforeMinutes,
+        ),
+        checkinWindowAfterMinutes: toNumber(
+            byVariable.get('CHECKIN_WINDOW_AFTER_MINUTES')?.value ?? '',
+            SETTINGS_DEFAULTS.checkinWindowAfterMinutes,
+        ),
+        reservationDurationHours: toNumber(
+            byVariable.get('RESERVATION_DURATION_HOURS')?.value ?? '',
+            SETTINGS_DEFAULTS.reservationDurationHours,
+        ),
+        reservationStartMode,
+        overtimeThresholdWatts: toNumber(
+            byVariable.get('OVERTIME_THRESHOLD_WATTS')?.value ?? '',
+            SETTINGS_DEFAULTS.overtimeThresholdWatts,
+        ),
+        consumptionPollSeconds: toNumber(
+            byVariable.get('CONSUMPTION_POLL_SECONDS')?.value ?? '',
+            SETTINGS_DEFAULTS.consumptionPollSeconds,
+        ),
+        billingMode,
+        pricePerUse: toNumber(
+            byVariable.get('PRICE_PER_USE')?.value ?? '',
+            SETTINGS_DEFAULTS.pricePerUse,
+        ),
+        pricePerKwh: toNumber(
+            byVariable.get('PRICE_PER_KWH')?.value ?? '',
+            SETTINGS_DEFAULTS.pricePerKwh,
+        ),
+        ...metadata,
+    };
+};
+
+const readActiveRows = async (): Promise<SettingsVariableRecord[]> => {
+    const result = await db.query<SettingsVariableRecord>(
+        `SELECT id,
+                variable,
+                value,
+                start_at,
+                end_at,
+                updated_by_user_id,
+                created_at
+         FROM settings_variables
+         WHERE end_at IS NULL`,
+        [],
+    );
+    return result.rows;
+};
+
+const readRowsAsOf = async (dateTimeIso: string): Promise<SettingsVariableRecord[]> => {
+    const result = await db.query<SettingsVariableRecord>(
+        `SELECT DISTINCT ON (variable)
+                id,
+                variable,
+                value,
+                start_at,
+                end_at,
+                updated_by_user_id,
+                created_at
+         FROM settings_variables
+         WHERE start_at <= $1
+           AND (end_at IS NULL OR end_at > $1)
+         ORDER BY variable, start_at DESC, created_at DESC`,
+        [dateTimeIso],
+    );
+    return result.rows;
+};
+
+const setVariableValue = async (
+    client: PoolClient,
+    variable: SettingsVariableName,
+    value: string,
+    updatedByUserId: string,
+    nowIso: string,
+): Promise<void> => {
+    await client.query(
+        `UPDATE settings_variables
+         SET end_at = $2
+         WHERE variable = $1
+           AND end_at IS NULL`,
+        [variable, nowIso],
+    );
+
+    await client.query(
+        `INSERT INTO settings_variables (variable, value, start_at, end_at, updated_by_user_id, created_at)
+         VALUES ($1, $2, $3, NULL, $4, $3)`,
+        [variable, value, nowIso, updatedByUserId],
+    );
+};
 
 export const systemSettingsRepository = {
     async get(): Promise<SystemSettingsView> {
-        const result = await db.query<SystemSettingsRecord>(
-            `SELECT id,
-                    checkin_window_before_minutes,
-                    checkin_window_after_minutes,
-                    overtime_threshold_watts,
-                    consumption_poll_seconds,
-                    billing_mode,
-                    price_per_use,
-                    price_per_kwh,
-                    updated_by_user_id,
-                    updated_at
-             FROM system_settings
-             WHERE id = 1
-             LIMIT 1`,
-            [],
-        );
-
-        if (result.rows[0]) {
-            return mapView(result.rows[0]);
-        }
-
-        const insertResult = await db.query<SystemSettingsRecord>(
-            `INSERT INTO system_settings (
-                id,
-                checkin_window_before_minutes,
-                checkin_window_after_minutes,
-                overtime_threshold_watts,
-                consumption_poll_seconds,
-                billing_mode,
-                price_per_use,
-                price_per_kwh
-            )
-            VALUES (1, 15, 30, 15, 30, 'PER_USE', 0, 0)
-            RETURNING id,
-                      checkin_window_before_minutes,
-                      checkin_window_after_minutes,
-                      overtime_threshold_watts,
-                      consumption_poll_seconds,
-                      billing_mode,
-                      price_per_use,
-                      price_per_kwh,
-                      updated_by_user_id,
-                      updated_at`,
-            [],
-        );
-
-        return mapView(insertResult.rows[0]);
+        const rows = await readActiveRows();
+        return mapRowsToView(rows);
     },
 
-    async update(input: {
-        checkinWindowBeforeMinutes?: number;
-        checkinWindowAfterMinutes?: number;
-        overtimeThresholdWatts?: number;
-        consumptionPollSeconds?: number;
-        billingMode?: 'PER_USE' | 'PER_KWH';
-        pricePerUse?: number;
-        pricePerKwh?: number;
-        updatedByUserId: string;
-    }): Promise<SystemSettingsView> {
-        const result = await db.query<SystemSettingsRecord>(
-            `UPDATE system_settings
-             SET checkin_window_before_minutes = COALESCE($1, checkin_window_before_minutes),
-                 checkin_window_after_minutes = COALESCE($2, checkin_window_after_minutes),
-                 overtime_threshold_watts = COALESCE($3, overtime_threshold_watts),
-                 consumption_poll_seconds = COALESCE($4, consumption_poll_seconds),
-                 billing_mode = COALESCE($5, billing_mode),
-                 price_per_use = COALESCE($6, price_per_use),
-                 price_per_kwh = COALESCE($7, price_per_kwh),
-                 updated_by_user_id = $8,
-                 updated_at = NOW()
-             WHERE id = 1
-             RETURNING id,
-                       checkin_window_before_minutes,
-                       checkin_window_after_minutes,
-                       overtime_threshold_watts,
-                       consumption_poll_seconds,
-                       billing_mode,
-                       price_per_use,
-                       price_per_kwh,
-                       updated_by_user_id,
-                       updated_at`,
-            [
-                input.checkinWindowBeforeMinutes ?? null,
-                input.checkinWindowAfterMinutes ?? null,
-                input.overtimeThresholdWatts ?? null,
-                input.consumptionPollSeconds ?? null,
-                input.billingMode ?? null,
-                input.pricePerUse ?? null,
-                input.pricePerKwh ?? null,
-                input.updatedByUserId,
-            ],
-        );
+    async getAsOf(dateTimeIso: string): Promise<SystemSettingsView> {
+        const rows = await readRowsAsOf(dateTimeIso);
+        return mapRowsToView(rows);
+    },
 
-        return mapView(result.rows[0]);
+    async update(input: UpdateSettingsInput): Promise<SystemSettingsView> {
+        const nowIso = new Date().toISOString();
+        const entries = Object.entries(KEY_TO_VARIABLE) as Array<
+            [Exclude<keyof UpdateSettingsInput, 'updatedByUserId'>, SettingsVariableName]
+        >;
+        const changed = entries
+            .filter(([key]) => input[key] !== undefined)
+            .map(([key, variable]) => ({
+                variable,
+                value: String(input[key]),
+            }));
+
+        if (changed.length === 0) {
+            return this.get();
+        }
+
+        const client = await db.connect();
+        try {
+            await client.query('BEGIN');
+            for (const item of changed) {
+                await setVariableValue(client, item.variable, item.value, input.updatedByUserId, nowIso);
+            }
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+
+        return this.get();
     },
 };

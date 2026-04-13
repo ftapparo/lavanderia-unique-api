@@ -11,6 +11,8 @@ export const settingsController = {
         const updated = await settingsService.update({
             checkinWindowBeforeMinutes: typeof req.body?.checkinWindowBeforeMinutes === 'number' ? req.body.checkinWindowBeforeMinutes : undefined,
             checkinWindowAfterMinutes: typeof req.body?.checkinWindowAfterMinutes === 'number' ? req.body.checkinWindowAfterMinutes : undefined,
+            reservationDurationHours: typeof req.body?.reservationDurationHours === 'number' ? req.body.reservationDurationHours : undefined,
+            reservationStartMode: req.body?.reservationStartMode ? String(req.body.reservationStartMode).toUpperCase() as 'ANY_TIME' | 'FULL_HOUR' : undefined,
             overtimeThresholdWatts: typeof req.body?.overtimeThresholdWatts === 'number' ? req.body.overtimeThresholdWatts : undefined,
             consumptionPollSeconds: typeof req.body?.consumptionPollSeconds === 'number' ? req.body.consumptionPollSeconds : undefined,
             billingMode: req.body?.billingMode ? String(req.body.billingMode).toUpperCase() as 'PER_USE' | 'PER_KWH' : undefined,

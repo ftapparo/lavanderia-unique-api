@@ -1,25 +1,16 @@
-import { env } from '../config/env';
 import { systemSettingsRepository } from '../db/repositories/system-settings.repository';
 import { AppError } from '../utils/app-error';
 
 export const settingsService = {
     async get() {
-        const settings = await systemSettingsRepository.get();
-        return {
-            ...settings,
-            fallbackFromEnv: {
-                checkinWindowBeforeMinutes: env.checkinWindowBeforeMinutes,
-                checkinWindowAfterMinutes: env.checkinWindowAfterMinutes,
-                billingMode: env.billingMode,
-                pricePerUse: env.pricePerUse,
-                pricePerKwh: env.pricePerKwh,
-            },
-        };
+        return systemSettingsRepository.get();
     },
 
     async update(input: {
         checkinWindowBeforeMinutes?: number;
         checkinWindowAfterMinutes?: number;
+        reservationDurationHours?: number;
+        reservationStartMode?: 'ANY_TIME' | 'FULL_HOUR';
         overtimeThresholdWatts?: number;
         consumptionPollSeconds?: number;
         billingMode?: 'PER_USE' | 'PER_KWH';
@@ -31,6 +22,12 @@ export const settingsService = {
         }
         if (input.checkinWindowAfterMinutes !== undefined && input.checkinWindowAfterMinutes < 0) {
             throw new AppError('checkinWindowAfterMinutes nao pode ser negativo.', 400);
+        }
+        if (input.reservationDurationHours !== undefined && (!Number.isInteger(input.reservationDurationHours) || input.reservationDurationHours <= 0 || input.reservationDurationHours > 24)) {
+            throw new AppError('reservationDurationHours deve ser um inteiro entre 1 e 24.', 400);
+        }
+        if (input.reservationStartMode !== undefined && !['ANY_TIME', 'FULL_HOUR'].includes(input.reservationStartMode)) {
+            throw new AppError('reservationStartMode invalido.', 400);
         }
         if (input.overtimeThresholdWatts !== undefined && input.overtimeThresholdWatts < 0) {
             throw new AppError('overtimeThresholdWatts nao pode ser negativo.', 400);

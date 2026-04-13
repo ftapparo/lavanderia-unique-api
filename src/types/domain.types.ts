@@ -160,6 +160,7 @@ export type MachinePairView = {
 };
 
 export type ReservationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'IN_PROGRESS' | 'FINISHED';
+export type ReservationStartMode = 'ANY_TIME' | 'FULL_HOUR';
 
 export type ReservationRecord = {
     id: string;
@@ -288,22 +289,32 @@ export type IncidentView = {
     createdAt: string;
 };
 
-export type SystemSettingsRecord = {
-    id: number;
-    checkin_window_before_minutes: number;
-    checkin_window_after_minutes: number;
-    overtime_threshold_watts: string;
-    consumption_poll_seconds: number;
-    billing_mode: 'PER_USE' | 'PER_KWH';
-    price_per_use: string;
-    price_per_kwh: string;
+export type SettingsVariableName =
+    | 'CHECKIN_WINDOW_BEFORE_MINUTES'
+    | 'CHECKIN_WINDOW_AFTER_MINUTES'
+    | 'RESERVATION_DURATION_HOURS'
+    | 'RESERVATION_START_MODE'
+    | 'OVERTIME_THRESHOLD_WATTS'
+    | 'CONSUMPTION_POLL_SECONDS'
+    | 'BILLING_MODE'
+    | 'PRICE_PER_USE'
+    | 'PRICE_PER_KWH';
+
+export type SettingsVariableRecord = {
+    id: string;
+    variable: SettingsVariableName;
+    value: string;
+    start_at: string;
+    end_at: string | null;
     updated_by_user_id: string | null;
-    updated_at: string;
+    created_at: string;
 };
 
 export type SystemSettingsView = {
     checkinWindowBeforeMinutes: number;
     checkinWindowAfterMinutes: number;
+    reservationDurationHours: number;
+    reservationStartMode: ReservationStartMode;
     overtimeThresholdWatts: number;
     consumptionPollSeconds: number;
     billingMode: 'PER_USE' | 'PER_KWH';
@@ -318,7 +329,7 @@ export type InvoiceRecord = {
     competence: string;
     user_id: string;
     unit_id: string | null;
-    billing_mode: 'PER_USE' | 'PER_KWH';
+    billing_mode: 'PER_USE' | 'PER_KWH' | 'MIXED';
     total_amount: string;
     generated_at: string;
     created_at: string;
@@ -345,7 +356,7 @@ export type InvoiceView = {
     userName: string;
     unitId: string | null;
     unitName: string | null;
-    billingMode: 'PER_USE' | 'PER_KWH';
+    billingMode: 'PER_USE' | 'PER_KWH' | 'MIXED';
     totalAmount: number;
     generatedAt: string;
     createdAt: string;
