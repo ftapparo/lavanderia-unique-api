@@ -29,3 +29,5 @@ Regras:
 - Preferir PowerShell 7 (`pwsh`).
 - Sempre gravar arquivos em UTF-8.
 - Em caso de texto corrompido (`Ã`, `?`, `�`), interromper e corrigir encoding antes de continuar.
+
+@RTK.md
