@@ -11,6 +11,7 @@ router.post('/auth/register', authRateLimit, asyncHandler(authController.registe
 router.post('/auth/login', authRateLimit, asyncHandler(authController.login));
 router.post('/auth/refresh', authRateLimit, asyncHandler(authController.refresh));
 router.post('/auth/forgot-password', authRateLimit, asyncHandler(authController.forgotPassword));
+router.post('/auth/verify-pin', authRateLimit, asyncHandler(authController.verifyPin));
 router.post('/auth/reset-password', authRateLimit, asyncHandler(authController.resetPassword));
 router.get('/auth/me', authMiddleware, asyncHandler(authController.me));
 router.patch('/auth/me', authMiddleware, asyncHandler(authController.updateMe));

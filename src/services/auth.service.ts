@@ -239,19 +239,23 @@ export const authService = {
         return generateTokens(user);
     },
 
-    async forgotPassword(input: { identity: string }): Promise<{ requested: boolean }> {
+    async forgotPassword(input: { identity: string; cpf: string }): Promise<{ requested: boolean }> {
         const identity = String(input.identity || '').trim();
+        const cpf = normalizeDocument(String(input.cpf || '').trim());
+
         if (!identity) {
-            throw new AppError('Identificacao obrigatoria.', 400);
+            throw new AppError('E-mail obrigatorio.', 400);
+        }
+        if (!cpf || (cpf.length !== 11 && cpf.length !== 14)) {
+            throw new AppError('CPF ou CNPJ obrigatorio.', 400);
         }
 
-        const user = identity.includes('@')
-            ? await usersRepository.findByEmail(identity.toLowerCase())
-            : await usersRepository.findByCpf(normalizeDocument(identity));
+        const user = await usersRepository.findByEmail(identity.toLowerCase());
 
-        // Resposta neutra para evitar enumeracao de usuarios.
-        if (!user) {
-            return { requested: true };
+        // Valida que email e CPF pertencem ao mesmo usuario.
+        // Erro explícito: o APP precisa informar o usuario que os dados nao conferem.
+        if (!user || user.cpf !== cpf) {
+            throw new AppError('E-mail e CPF nao correspondem a uma conta cadastrada.', 422);
         }
 
         const generatedPin = generatePin();
@@ -276,6 +280,28 @@ export const authService = {
         return { requested: true };
     },
 
+    async verifyPin(input: { identity: string; pin: string }): Promise<{ valid: boolean }> {
+        const identity = String(input.identity || '').trim();
+        const pin = String(input.pin || '').trim();
+
+        if (!identity) {
+            throw new AppError('Identificacao obrigatoria.', 400);
+        }
+        if (!/^\d{6}$/.test(pin)) {
+            throw new AppError('PIN invalido. Informe 6 digitos numericos.', 400);
+        }
+
+        const user = identity.includes('@')
+            ? await usersRepository.findByEmail(identity.toLowerCase())
+            : await usersRepository.findByCpf(normalizeDocument(identity));
+
+        if (!user || !user.pin_hash || !verifyPassword(pin, user.pin_hash)) {
+            throw new AppError('CPF ou PIN invalido.', 401);
+        }
+
+        return { valid: true };
+    },
+
     async resetPasswordByPin(input: { identity: string; pin: string; newPassword: string }): Promise<{ changed: boolean }> {
         const identity = String(input.identity || '').trim();
         const pin = String(input.pin || '').trim();
@@ -290,8 +316,20 @@ export const authService = {
         if (!newPassword) {
             throw new AppError('Nova senha obrigatoria.', 400);
         }
-        if (newPassword.length < 6) {
-            throw new AppError('A nova senha deve ter pelo menos 6 caracteres.', 400);
+        if (newPassword.length < 8) {
+            throw new AppError('A nova senha deve ter pelo menos 8 caracteres.', 400);
+        }
+        if (!/[A-Z]/.test(newPassword)) {
+            throw new AppError('A nova senha deve conter pelo menos uma letra maiuscula.', 400);
+        }
+        if (!/[a-z]/.test(newPassword)) {
+            throw new AppError('A nova senha deve conter pelo menos uma letra minuscula.', 400);
+        }
+        if (!/\d/.test(newPassword)) {
+            throw new AppError('A nova senha deve conter pelo menos um numero.', 400);
+        }
+        if (!/[^A-Za-z0-9]/.test(newPassword)) {
+            throw new AppError('A nova senha deve conter pelo menos um caractere especial.', 400);
         }
 
         const user = identity.includes('@')

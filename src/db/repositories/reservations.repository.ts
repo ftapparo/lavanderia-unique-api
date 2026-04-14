@@ -148,6 +148,52 @@ export const reservationsRepository = {
         return result.rows;
     },
 
+    async feedByUser(input: {
+        userId: string;
+        cursor: string;   // ISO datetime — pivot
+        direction: 'before' | 'after';
+        limit: number;
+        dateFilter?: string; // YYYY-MM-DD — restringe ao dia
+    }): Promise<ReservationView[]> {
+        const params: unknown[] = [input.userId, input.cursor, input.limit];
+        const op    = input.direction === 'after' ? '>=' : '<';
+        const order = input.direction === 'after' ? 'ASC' : 'DESC';
+        let dateClause = '';
+        if (input.dateFilter) {
+            params.push(input.dateFilter);
+            dateClause = `AND DATE(r.start_at AT TIME ZONE 'America/Sao_Paulo') = $${params.length}::date`;
+        }
+
+        const result = await db.query<ReservationView>(
+            `SELECT r.id,
+                    r.unit_id          AS "unitId",
+                    u.name             AS "unitName",
+                    u.code             AS "unitCode",
+                    r.machine_pair_id  AS "machinePairId",
+                    mp.name            AS "machinePairName",
+                    r.user_id          AS "userId",
+                    us.name            AS "userName",
+                    r.start_at         AS "startAt",
+                    r.end_at           AS "endAt",
+                    r.status,
+                    r.canceled_at      AS "canceledAt"
+             FROM reservations r
+             INNER JOIN units u       ON u.id  = r.unit_id
+             INNER JOIN machine_pairs mp ON mp.id = r.machine_pair_id
+             INNER JOIN users us      ON us.id = r.user_id
+             WHERE r.user_id = $1
+               AND r.start_at ${op} $2
+               ${dateClause}
+             ORDER BY r.start_at ${order}
+             LIMIT $3`,
+            params,
+        );
+
+        // Normalise: before returns DESC from DB, reverse to get chronological order
+        const rows = result.rows;
+        return input.direction === 'before' ? rows.reverse() : rows;
+    },
+
     async listBusy(): Promise<ReservationBusyView[]> {
         const result = await db.query<ReservationBusyView>(
             `SELECT r.id,
@@ -193,7 +239,7 @@ export const reservationsRepository = {
         return result.rows;
     },
 
-    async listFinishedByCompetence(competence: string): Promise<Array<{
+    async listFinishedByCompetence(competence: string, chargeNoShow: boolean): Promise<Array<{
         reservationId: string;
         userId: string;
         unitId: string;
@@ -201,6 +247,10 @@ export const reservationsRepository = {
         machinePairName: string;
         laundrySessionId: string | null;
     }>> {
+        const noShowFilter = chargeNoShow
+            ? ''
+            : `AND ls.id IS NOT NULL`;
+
         const result = await db.query<Array<{
             reservationId: string;
             userId: string;
@@ -220,6 +270,7 @@ export const reservationsRepository = {
              LEFT JOIN laundry_sessions ls ON ls.reservation_id = r.id
              WHERE r.status = 'FINISHED'
                AND to_char(r.start_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') = $1
+               ${noShowFilter}
              ORDER BY r.start_at ASC`,
             [competence],
         );

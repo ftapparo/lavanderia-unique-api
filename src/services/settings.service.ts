@@ -16,6 +16,7 @@ export const settingsService = {
         billingMode?: 'PER_USE' | 'PER_KWH';
         pricePerUse?: number;
         pricePerKwh?: number;
+        chargeNoShow?: boolean;
     }, actorUserId: string) {
         if (input.checkinWindowBeforeMinutes !== undefined && input.checkinWindowBeforeMinutes < 0) {
             throw new AppError('checkinWindowBeforeMinutes nao pode ser negativo.', 400);

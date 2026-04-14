@@ -18,6 +18,7 @@ export const settingsController = {
             billingMode: req.body?.billingMode ? String(req.body.billingMode).toUpperCase() as 'PER_USE' | 'PER_KWH' : undefined,
             pricePerUse: typeof req.body?.pricePerUse === 'number' ? req.body.pricePerUse : undefined,
             pricePerKwh: typeof req.body?.pricePerKwh === 'number' ? req.body.pricePerKwh : undefined,
+            chargeNoShow: typeof req.body?.chargeNoShow === 'boolean' ? req.body.chargeNoShow : undefined,
         }, String(req.auth?.userId));
 
         res.ok(updated);

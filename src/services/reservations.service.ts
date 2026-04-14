@@ -222,6 +222,25 @@ export const reservationsService = {
         return reservationsRepository.listBusy();
     },
 
+    async feed(userId: string, input: {
+        cursor: string;
+        direction: 'before' | 'after';
+        limit: number;
+        date?: string;
+    }): Promise<ReservationView[]> {
+        if (!input.cursor || isNaN(new Date(input.cursor).getTime())) {
+            throw new AppError('cursor invalido.', 400);
+        }
+        const limit = Math.min(Math.max(1, input.limit), 50);
+        return reservationsRepository.feedByUser({
+            userId,
+            cursor: input.cursor,
+            direction: input.direction,
+            limit,
+            dateFilter: input.date,
+        });
+    },
+
     async cancel(reservationId: string, userId: string, isAdmin: boolean) {
         const reservation = await reservationsRepository.findById(reservationId);
         if (!reservation) {

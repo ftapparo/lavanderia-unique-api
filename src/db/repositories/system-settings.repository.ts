@@ -16,6 +16,7 @@ const SETTINGS_DEFAULTS: SystemSettingsView = {
     billingMode: 'PER_USE',
     pricePerUse: 0,
     pricePerKwh: 0,
+    chargeNoShow: true,
     updatedByUserId: null,
     updatedAt: new Date(0).toISOString(),
 };
@@ -33,6 +34,7 @@ const KEY_TO_VARIABLE: Record<
     billingMode: 'BILLING_MODE',
     pricePerUse: 'PRICE_PER_USE',
     pricePerKwh: 'PRICE_PER_KWH',
+    chargeNoShow: 'CHARGE_NO_SHOW',
 };
 
 type UpdateSettingsInput = {
@@ -45,6 +47,7 @@ type UpdateSettingsInput = {
     billingMode?: 'PER_USE' | 'PER_KWH';
     pricePerUse?: number;
     pricePerKwh?: number;
+    chargeNoShow?: boolean;
     updatedByUserId: string;
 };
 
@@ -77,6 +80,9 @@ const mapRowsToView = (rows: SettingsVariableRecord[]): SystemSettingsView => {
         ? billingModeValue
         : SETTINGS_DEFAULTS.billingMode;
 
+    const chargeNoShowValue = byVariable.get('CHARGE_NO_SHOW')?.value;
+    const chargeNoShow = chargeNoShowValue === 'false' ? false : SETTINGS_DEFAULTS.chargeNoShow;
+
     return {
         checkinWindowBeforeMinutes: toNumber(
             byVariable.get('CHECKIN_WINDOW_BEFORE_MINUTES')?.value ?? '',
@@ -108,6 +114,7 @@ const mapRowsToView = (rows: SettingsVariableRecord[]): SystemSettingsView => {
             byVariable.get('PRICE_PER_KWH')?.value ?? '',
             SETTINGS_DEFAULTS.pricePerKwh,
         ),
+        chargeNoShow,
         ...metadata,
     };
 };

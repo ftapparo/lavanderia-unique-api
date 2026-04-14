@@ -30,7 +30,16 @@ export const authController = {
 
     async forgotPassword(req: Request, res: Response) {
         const result = await authService.forgotPassword({
-            identity: String(req.body?.identity || req.body?.email || req.body?.cpf || ''),
+            identity: String(req.body?.identity || req.body?.email || ''),
+            cpf: String(req.body?.cpf || ''),
+        });
+        res.ok(result);
+    },
+
+    async verifyPin(req: Request, res: Response) {
+        const result = await authService.verifyPin({
+            identity: String(req.body?.identity || req.body?.cpf || ''),
+            pin: String(req.body?.pin || ''),
         });
         res.ok(result);
     },

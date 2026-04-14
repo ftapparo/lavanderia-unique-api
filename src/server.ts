@@ -18,7 +18,7 @@ if (dotenvResult.error) {
 async function StartService(): Promise<void> {
     try {
         await StartWebServer();
-        opsJobsService.start();
+        await opsJobsService.start();
         logger.info('SERVICE_STARTED');
     } catch (err) {
         logger.error('SERVICE_START_FAILED', { error: err instanceof Error ? err.message : err });

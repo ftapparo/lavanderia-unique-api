@@ -48,9 +48,9 @@ const toCsv = (headers: string[], rows: Array<Array<string | number>>): string =
 export const billingService = {
     async run(input: { competence?: string }) {
         const competence = toCompetence(input.competence);
-        const finishedReservations = await reservationsRepository.listFinishedByCompetence(competence);
+        const settings = await systemSettingsRepository.get();
+        const finishedReservations = await reservationsRepository.listFinishedByCompetence(competence, settings.chargeNoShow);
         if (finishedReservations.length === 0) {
-            const settings = await systemSettingsRepository.get();
             return {
                 competence,
                 billingMode: settings.billingMode,

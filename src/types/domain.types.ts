@@ -298,7 +298,8 @@ export type SettingsVariableName =
     | 'CONSUMPTION_POLL_SECONDS'
     | 'BILLING_MODE'
     | 'PRICE_PER_USE'
-    | 'PRICE_PER_KWH';
+    | 'PRICE_PER_KWH'
+    | 'CHARGE_NO_SHOW';
 
 export type SettingsVariableRecord = {
     id: string;
@@ -320,6 +321,7 @@ export type SystemSettingsView = {
     billingMode: 'PER_USE' | 'PER_KWH';
     pricePerUse: number;
     pricePerKwh: number;
+    chargeNoShow: boolean;
     updatedByUserId: string | null;
     updatedAt: string;
 };

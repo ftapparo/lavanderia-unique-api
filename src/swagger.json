@@ -2012,26 +2012,63 @@
         ]
       },
       "post": {
-        "tags": ["Usuarios"],
+        "tags": [
+          "Usuarios"
+        ],
         "summary": "Criar usuario",
         "description": "Cria um novo usuario. Restrito a administradores.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name", "cpf", "email", "role"],
+                "required": [
+                  "name",
+                  "cpf",
+                  "email",
+                  "role"
+                ],
                 "properties": {
-                  "name": { "type": "string" },
-                  "cpf": { "type": "string" },
-                  "email": { "type": "string", "format": "email" },
-                  "phone": { "type": "string", "nullable": true },
-                  "role": { "type": "string", "enum": ["USER", "ADMIN", "SUPER"] },
-                  "cargo": { "type": "string", "nullable": true },
-                  "profilePhotoBase64": { "type": "string", "nullable": true },
-                  "profilePhotoMime": { "type": "string", "nullable": true }
+                  "name": {
+                    "type": "string"
+                  },
+                  "cpf": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "USER",
+                      "ADMIN",
+                      "SUPER"
+                    ]
+                  },
+                  "cargo": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "profilePhotoBase64": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "profilePhotoMime": {
+                    "type": "string",
+                    "nullable": true
+                  }
                 }
               }
             }
@@ -2040,61 +2077,162 @@
         "responses": {
           "201": {
             "description": "Usuario criado com sucesso.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseUser" } } },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUser"
+                }
+              }
+            },
             "headers": {
-              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
-              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
             }
           },
           "400": {
             "description": "Dados invalidos.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
           },
           "401": {
             "description": "Nao autenticado.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
           },
           "403": {
             "description": "Acesso negado.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
           },
           "409": {
             "description": "CPF ou e-mail ja cadastrado.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
           }
         }
       }
     },
     "/v1/api/users/{id}": {
       "get": {
-        "tags": ["Usuarios"],
+        "tags": [
+          "Usuarios"
+        ],
         "summary": "Buscar usuario por ID",
         "description": "Retorna dados de um usuario especifico. Restrito a administradores.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do usuario.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Usuario encontrado.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseUser" } } },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUser"
+                }
+              }
+            },
             "headers": {
-              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
-              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
             }
           },
-          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
         }
       },
       "patch": {
-        "tags": ["Usuarios"],
+        "tags": [
+          "Usuarios"
+        ],
         "summary": "Atualizar usuario",
         "description": "Atualiza dados de um usuario. Restrito a administradores.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do usuario.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -2103,13 +2241,37 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string" },
-                  "email": { "type": "string", "format": "email" },
-                  "phone": { "type": "string", "nullable": true },
-                  "role": { "type": "string", "enum": ["USER", "ADMIN", "SUPER"] },
-                  "cargo": { "type": "string", "nullable": true },
-                  "profilePhotoBase64": { "type": "string", "nullable": true },
-                  "profilePhotoMime": { "type": "string", "nullable": true }
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "USER",
+                      "ADMIN",
+                      "SUPER"
+                    ]
+                  },
+                  "cargo": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "profilePhotoBase64": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "profilePhotoMime": {
+                    "type": "string",
+                    "nullable": true
+                  }
                 }
               }
             }
@@ -2118,63 +2280,222 @@
         "responses": {
           "200": {
             "description": "Usuario atualizado com sucesso.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseUser" } } },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUser"
+                }
+              }
+            },
             "headers": {
-              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
-              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
             }
           },
-          "400": { "description": "Dados invalidos.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+          "400": {
+            "description": "Dados invalidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
         }
       },
       "delete": {
-        "tags": ["Usuarios"],
+        "tags": [
+          "Usuarios"
+        ],
         "summary": "Remover usuario",
         "description": "Remove um usuario do sistema. Restrito a administradores.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do usuario.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Usuario removido com sucesso.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
             "headers": {
-              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
-              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
             }
           },
-          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "409": { "description": "Usuario possui vinculos ativos.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Usuario possui vinculos ativos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
         }
       }
     },
     "/v1/api/users/{id}/reset-password": {
       "patch": {
-        "tags": ["Usuarios"],
+        "tags": [
+          "Usuarios"
+        ],
         "summary": "Resetar senha de usuario",
         "description": "Gera nova senha temporaria para o usuario. Restrito a administradores.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "description": "Identificador do usuario.", "schema": { "type": "string", "format": "uuid" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Identificador do usuario.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Senha resetada com sucesso.",
-            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            },
             "headers": {
-              "x-request-id": { "$ref": "#/components/headers/RequestIdHeader" },
-              "x-actor": { "$ref": "#/components/headers/ActorHeader" }
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
             }
           },
-          "401": { "description": "Nao autenticado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "403": { "description": "Acesso negado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } },
-          "404": { "description": "Usuario nao encontrado.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiResponseBase" } } } }
+          "401": {
+            "description": "Nao autenticado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Acesso negado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Usuario nao encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseBase"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3389,6 +3710,95 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseLaundrySession"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/admin/jobs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Listar configuracoes de jobs",
+        "description": "Retorna configuracoes persistidas dos jobs operacionais junto com o estado atual em runtime.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jobs retornados com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminJobs"
+                }
+              }
+            },
+            "headers": {
+              "x-request-id": {
+                "$ref": "#/components/headers/RequestIdHeader"
+              },
+              "x-actor": {
+                "$ref": "#/components/headers/ActorHeader"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/api/admin/jobs/{name}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Atualizar configuracao de job",
+        "description": "Atualiza expressao cron e status de ativacao de um job operacional.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "description": "Nome do job.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminJobUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job atualizado com sucesso.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseAdminJob"
                 }
               }
             },
@@ -5069,44 +5479,106 @@
               "jobs": {
                 "type": "object",
                 "additionalProperties": {
-                  "type": "object",
-                  "properties": {
-                    "lastStartedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "lastFinishedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true
-                    },
-                    "lastStatus": {
-                      "type": "string",
-                      "enum": [
-                        "SUCCESS",
-                        "ERROR",
-                        "RUNNING",
-                        "IDLE"
-                      ]
-                    },
-                    "lastError": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "runCount": {
-                      "type": "integer"
-                    },
-                    "successCount": {
-                      "type": "integer"
-                    },
-                    "errorCount": {
-                      "type": "integer"
-                    }
-                  }
+                  "$ref": "#/components/schemas/AdminJobRuntimeState"
                 }
               }
             }
+          }
+        }
+      },
+      "AdminJobRuntimeState": {
+        "type": "object",
+        "properties": {
+          "lastStartedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastFinishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastStatus": {
+            "type": "string",
+            "enum": [
+              "SUCCESS",
+              "ERROR",
+              "RUNNING",
+              "IDLE"
+            ]
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "runCount": {
+            "type": "integer"
+          },
+          "successCount": {
+            "type": "integer"
+          },
+          "errorCount": {
+            "type": "integer"
+          },
+          "cronExpression": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminJob": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "cron_expression": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "need_update": {
+            "type": "boolean"
+          },
+          "updated_by_user_id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "runtimeState": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminJobRuntimeState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AdminJobUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "cronExpression": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
           }
         }
       },
@@ -5344,7 +5816,32 @@
             "nullable": true
           },
           "jobs": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "started": {
+                "type": "boolean"
+              },
+              "retry": {
+                "type": "object",
+                "properties": {
+                  "attempts": {
+                    "type": "integer"
+                  },
+                  "baseDelayMs": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "jobs": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/AdminJobRuntimeState"
+                }
+              }
+            }
           },
           "checkedAt": {
             "type": "string",
@@ -5380,6 +5877,39 @@
             "properties": {
               "data": {
                 "$ref": "#/components/schemas/AdminOpsHealth"
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseAdminJobs": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AdminJob"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ApiResponseAdminJob": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/AdminJob"
               }
             }
           }

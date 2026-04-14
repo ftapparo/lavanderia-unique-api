@@ -38,6 +38,21 @@ export const reservationsController = {
         res.ok(rows);
     },
 
+    async feed(req: Request, res: Response) {
+        const cursor    = String(req.query.cursor    || new Date().toISOString());
+        const direction = req.query.direction === 'before' ? 'before' : 'after';
+        const limit     = Math.min(50, Math.max(1, parseInt(String(req.query.limit || '5'), 10) || 5));
+        const date      = req.query.date ? String(req.query.date) : undefined;
+
+        const rows = await reservationsService.feed(String(req.auth?.userId), {
+            cursor,
+            direction,
+            limit,
+            date,
+        });
+        res.ok(rows);
+    },
+
     async cancel(req: Request, res: Response) {
         const reservationId = String(req.params.id || '');
         if (!isUuid(reservationId)) {

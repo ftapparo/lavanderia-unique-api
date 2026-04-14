@@ -4,7 +4,9 @@
       "Bash(grep -r \"wallet\\\\|balance\\\\|saldo\\\\|extrato\\\\|invoice\" 'd:/Git/Lavanderia Unique/APP/src' --include=*.tsx --include=*.ts -l)",
       "Bash(grep -r \"qrcode\\\\|QRCode\\\\|qr-code\\\\|check-in\\\\|checkin\" 'd:/Git/Lavanderia Unique/APP/src' --include=*.tsx --include=*.ts -l)",
       "Bash(npx tsc:*)",
-      "Bash(find '/d/Git/Lavanderia Unique/APP-MODELO/src' -type f -name *esrva* -o -name *Reserv* -o -name *reserv*)"
+      "Bash(find '/d/Git/Lavanderia Unique/APP-MODELO/src' -type f -name *esrva* -o -name *Reserv* -o -name *reserv*)",
+      "Bash(rtk ls:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

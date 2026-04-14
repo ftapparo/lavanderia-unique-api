@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { db } from '../db/pool';
 import { opsJobsService } from '../services/ops-jobs.service';
+import { jobConfigsService } from '../services/job-configs.service';
 import { tuyaClient } from '../integrations/tuya/tuya-client';
 import { sessionsService } from '../services/sessions.service';
 import { AppError } from '../utils/app-error';
@@ -89,6 +90,32 @@ export const adminController = {
         );
 
         res.ok(result.rows);
+    },
+
+    async listJobs(_req: Request, res: Response) {
+        const configs = await jobConfigsService.list();
+        const status = opsJobsService.getStatus();
+        const merged = configs.map((config) => ({
+            ...config,
+            runtimeState: status.jobs[config.name] ?? null,
+        }));
+        res.ok(merged);
+    },
+
+    async updateJob(req: Request, res: Response) {
+        const name = String(req.params.name || '');
+        const description = typeof req.body?.description === 'string' ? req.body.description : undefined;
+        const cronExpression = typeof req.body?.cronExpression === 'string' ? req.body.cronExpression : undefined;
+        const active = typeof req.body?.active === 'boolean' ? req.body.active : undefined;
+
+        const updated = await jobConfigsService.update({
+            name,
+            description,
+            cronExpression,
+            active,
+            actorUserId: String(req.auth?.userId),
+        });
+        res.ok(updated);
     },
 
     async reconcileSession(req: Request, res: Response) {
