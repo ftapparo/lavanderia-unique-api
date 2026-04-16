@@ -10,6 +10,11 @@ const readNumber = (value: string | undefined, fallback: number): number => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const readOptional = (value: string | undefined): string | undefined => {
+    const normalized = (value || '').trim();
+    return normalized || undefined;
+};
+
 const readBoolean = (value: string | undefined, fallback: boolean): boolean => {
     if (typeof value !== 'string') {
         return fallback;
@@ -44,4 +49,9 @@ export const env = {
     tuyaTimeoutMs: readNumber(process.env.TUYA_TIMEOUT_MS, 5000),
     tuyaRetryAttempts: readNumber(process.env.TUYA_RETRY_ATTEMPTS, 3),
     tuyaRetryBaseDelayMs: readNumber(process.env.TUYA_RETRY_BASE_DELAY_MS, 250),
+    httpsEnabled: readBoolean(process.env.HTTPS_ENABLED, false),
+    httpsPort: readNumber(process.env.HTTPS_PORT, 3443),
+    httpsKeyFile: readOptional(process.env.HTTPS_KEY_FILE),
+    httpsCertFile: readOptional(process.env.HTTPS_CERT_FILE),
+    httpsCaFile: readOptional(process.env.HTTPS_CA_FILE),
 };

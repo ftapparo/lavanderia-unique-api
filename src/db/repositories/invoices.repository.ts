@@ -40,6 +40,7 @@ export const invoicesRepository = {
         invoiceId: string;
         reservationId: string | null;
         laundrySessionId: string | null;
+        chargeType: 'USE' | 'NO_SHOW';
         description: string;
         quantity: number;
         unitPrice: number;
@@ -50,17 +51,19 @@ export const invoicesRepository = {
                 invoice_id,
                 reservation_id,
                 laundry_session_id,
+                charge_type,
                 description,
                 quantity,
                 unit_price,
                 total_amount,
                 metadata
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`;
         const params = [
             input.invoiceId,
             input.reservationId,
             input.laundrySessionId,
+            input.chargeType,
             input.description,
             input.quantity,
             input.unitPrice,
@@ -196,6 +199,7 @@ export const invoicesRepository = {
                     ii.invoice_id AS "invoiceId",
                     ii.reservation_id AS "reservationId",
                     ii.laundry_session_id AS "laundrySessionId",
+                    ii.charge_type AS "chargeType",
                     ii.description,
                     ii.quantity::text AS "quantity_text",
                     ii.unit_price::text AS "unit_price_text",
@@ -210,6 +214,7 @@ export const invoicesRepository = {
 
         return result.rows.map((row) => ({
             ...row,
+            chargeType: row.chargeType as 'USE' | 'NO_SHOW',
             quantity: Number(row.quantity_text),
             unitPrice: Number(row.unit_price_text),
             totalAmount: Number(row.total_amount_text),

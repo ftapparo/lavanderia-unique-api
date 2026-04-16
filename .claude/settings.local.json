@@ -6,7 +6,10 @@
       "Bash(npx tsc:*)",
       "Bash(find '/d/Git/Lavanderia Unique/APP-MODELO/src' -type f -name *esrva* -o -name *Reserv* -o -name *reserv*)",
       "Bash(rtk ls:*)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(rtk grep:*)",
+      "Bash(awk '{print $9}')",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

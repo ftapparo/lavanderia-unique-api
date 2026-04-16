@@ -8,7 +8,9 @@ import { responseHandler } from '../middleware/response-handler';
 import { errorHandler } from '../middleware/error-handler';
 import { requestLoggerMiddleware } from '../middleware/request-logger';
 import type { Express, RequestHandler } from 'express';
-import type { Server } from 'http';
+import type { Server as HttpServer } from 'http';
+import { createServer as createHttpsServer } from 'https';
+import { readFileSync } from 'fs';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
@@ -57,13 +59,50 @@ export function createApp(): Express {
     return app;
 }
 
-export async function StartWebServer(appInstance: Express = createApp()): Promise<Server> {
+const closeHttpServer = (server: HttpServer): Promise<void> => new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+});
+
+const startHttpsServer = async (app: Express): Promise<void> => {
+    if (!env.httpsEnabled) {
+        return;
+    }
+
+    if (!env.httpsKeyFile || !env.httpsCertFile) {
+        throw new Error('HTTPS_ENABLED=true requires HTTPS_KEY_FILE and HTTPS_CERT_FILE.');
+    }
+
+    const httpsOptions = {
+        key: readFileSync(env.httpsKeyFile),
+        cert: readFileSync(env.httpsCertFile),
+        ca: env.httpsCaFile ? readFileSync(env.httpsCaFile) : undefined,
+    };
+
+    const httpsServer = createHttpsServer(httpsOptions, app);
+    await new Promise<void>((resolve, reject) => {
+        httpsServer.once('error', reject);
+        httpsServer.listen(env.httpsPort, () => {
+            httpsServer.off('error', reject);
+            resolve();
+        });
+    });
+    logger.info('API_SERVER_STARTED', { protocol: 'https', port: env.httpsPort });
+};
+
+export async function StartWebServer(appInstance: Express = createApp()): Promise<HttpServer> {
     const app = appInstance;
     const port = process.env.PORT || env.port;
 
     const server = app.listen(port, () => {
-        logger.info('API_SERVER_STARTED', { port });
+        logger.info('API_SERVER_STARTED', { protocol: 'http', port });
     });
+
+    try {
+        await startHttpsServer(app);
+    } catch (error) {
+        await closeHttpServer(server);
+        throw error;
+    }
 
     return server;
 }

@@ -17,6 +17,7 @@ const SETTINGS_DEFAULTS: SystemSettingsView = {
     pricePerUse: 0,
     pricePerKwh: 0,
     chargeNoShow: true,
+    cancelDeadlineBeforeMinutes: 60,
     updatedByUserId: null,
     updatedAt: new Date(0).toISOString(),
 };
@@ -35,6 +36,7 @@ const KEY_TO_VARIABLE: Record<
     pricePerUse: 'PRICE_PER_USE',
     pricePerKwh: 'PRICE_PER_KWH',
     chargeNoShow: 'CHARGE_NO_SHOW',
+    cancelDeadlineBeforeMinutes: 'CANCEL_DEADLINE_BEFORE_MINUTES',
 };
 
 type UpdateSettingsInput = {
@@ -48,6 +50,7 @@ type UpdateSettingsInput = {
     pricePerUse?: number;
     pricePerKwh?: number;
     chargeNoShow?: boolean;
+    cancelDeadlineBeforeMinutes?: number;
     updatedByUserId: string;
 };
 
@@ -115,6 +118,10 @@ const mapRowsToView = (rows: SettingsVariableRecord[]): SystemSettingsView => {
             SETTINGS_DEFAULTS.pricePerKwh,
         ),
         chargeNoShow,
+        cancelDeadlineBeforeMinutes: toNumber(
+            byVariable.get('CANCEL_DEADLINE_BEFORE_MINUTES')?.value ?? '',
+            SETTINGS_DEFAULTS.cancelDeadlineBeforeMinutes,
+        ),
         ...metadata,
     };
 };

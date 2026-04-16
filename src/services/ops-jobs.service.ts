@@ -3,6 +3,7 @@ import { consumptionSamplesRepository } from '../db/repositories/consumption-sam
 import { incidentsRepository } from '../db/repositories/incidents.repository';
 import { jobConfigsRepository } from '../db/repositories/job-configs.repository';
 import { laundrySessionsRepository } from '../db/repositories/laundry-sessions.repository';
+import { machineMaintenancesRepository } from '../db/repositories/machine-maintenances.repository';
 import { machinePairsRepository } from '../db/repositories/machine-pairs.repository';
 import { machinesRepository } from '../db/repositories/machines.repository';
 import { reservationsRepository } from '../db/repositories/reservations.repository';
@@ -28,10 +29,11 @@ const toControllableMachine = (machine: MachineRecord): ControllableMachine | nu
 
 // Defaults (env fallback)
 const JOB_DEFAULTS: Record<string, { cron: string; active: boolean }> = {
-    'no-show-detector':         { cron: process.env.JOB_NO_SHOW_CRON          || '*/2 * * * *', active: true },
-    'reservation-end-handler':  { cron: process.env.JOB_RESERVATION_END_CRON  || '* * * * *',   active: true },
-    'overtime-monitor':         { cron: process.env.JOB_OVERTIME_MONITOR_CRON || '* * * * *',   active: true },
-    'monthly-billing-generator':{ cron: process.env.JOB_MONTHLY_BILLING_CRON  || '5 0 1 * *',   active: true },
+    'no-show-detector':         { cron: process.env.JOB_NO_SHOW_CRON             || '*/2 * * * *', active: true },
+    'reservation-end-handler':  { cron: process.env.JOB_RESERVATION_END_CRON     || '* * * * *',   active: true },
+    'overtime-monitor':         { cron: process.env.JOB_OVERTIME_MONITOR_CRON    || '* * * * *',   active: true },
+    'monthly-billing-generator':{ cron: process.env.JOB_MONTHLY_BILLING_CRON     || '5 0 1 * *',   active: true },
+    'maintenance-activator':    { cron: process.env.JOB_MAINTENANCE_ACTIVATOR_CRON || '* * * * *', active: true },
 };
 
 const criticalRetryAttempts = Number(process.env.JOB_RETRY_ATTEMPTS || 3);
@@ -65,6 +67,7 @@ const jobStateByName: Record<string, JobState> = {
     'reservation-end-handler':   { ...emptyState(), cronExpression: JOB_DEFAULTS['reservation-end-handler'].cron,   active: true },
     'overtime-monitor':          { ...emptyState(), cronExpression: JOB_DEFAULTS['overtime-monitor'].cron,          active: true },
     'monthly-billing-generator': { ...emptyState(), cronExpression: JOB_DEFAULTS['monthly-billing-generator'].cron, active: true },
+    'maintenance-activator':     { ...emptyState(), cronExpression: JOB_DEFAULTS['maintenance-activator'].cron,     active: true },
 };
 
 function emptyState(): Omit<JobState, 'cronExpression' | 'active'> {
@@ -222,11 +225,34 @@ const runMonthlyBillingGenerator = async (): Promise<void> => {
     });
 };
 
+const runMaintenanceActivator = async (): Promise<void> => {
+    const now = new Date();
+    const pending = await machineMaintenancesRepository.listPendingActivation(now.toISOString());
+    for (const maintenance of pending) {
+        await runWithLock(`maintenance:${maintenance.machine_id}`, async () => {
+            await retry('maintenance-activator', async () => {
+                await machinesRepository.setStatus(maintenance.machine_id, 'MAINTENANCE');
+
+                const pair = await machinePairsRepository.findByMachineId(maintenance.machine_id);
+                if (pair) {
+                    const partnerMachineId = pair.washer_machine_id === maintenance.machine_id
+                        ? pair.dryer_machine_id
+                        : pair.washer_machine_id;
+                    await machinesRepository.setStatus(partnerMachineId, 'MAINTENANCE');
+                }
+
+                logger.info('MAINTENANCE_ACTIVATED', { maintenanceId: maintenance.id, machineId: maintenance.machine_id });
+            });
+        });
+    }
+};
+
 const JOB_RUNNERS: Record<string, () => Promise<void>> = {
     'no-show-detector':          runNoShowDetector,
     'reservation-end-handler':   runReservationEndHandler,
     'overtime-monitor':          runOvertimeMonitor,
     'monthly-billing-generator': runMonthlyBillingGenerator,
+    'maintenance-activator':     runMaintenanceActivator,
 };
 
 const guard = async (name: string, fn: () => Promise<void>) => {

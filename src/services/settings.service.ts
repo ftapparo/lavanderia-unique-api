@@ -17,6 +17,7 @@ export const settingsService = {
         pricePerUse?: number;
         pricePerKwh?: number;
         chargeNoShow?: boolean;
+        cancelDeadlineBeforeMinutes?: number;
     }, actorUserId: string) {
         if (input.checkinWindowBeforeMinutes !== undefined && input.checkinWindowBeforeMinutes < 0) {
             throw new AppError('checkinWindowBeforeMinutes nao pode ser negativo.', 400);
@@ -41,6 +42,9 @@ export const settingsService = {
         }
         if (input.pricePerKwh !== undefined && input.pricePerKwh < 0) {
             throw new AppError('pricePerKwh nao pode ser negativo.', 400);
+        }
+        if (input.cancelDeadlineBeforeMinutes !== undefined && input.cancelDeadlineBeforeMinutes < 0) {
+            throw new AppError('cancelDeadlineBeforeMinutes nao pode ser negativo.', 400);
         }
 
         return systemSettingsRepository.update({

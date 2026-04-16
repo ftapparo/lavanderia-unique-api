@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Read(//c/Users/Flavio/.claude/projects/**)"
+      "Read(//c/Users/Flavio/.claude/projects/**)",
+      "Read(//d/Git/Lavanderia Unique/**)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Flavio\\.claude\\projects\\d--Git-Lavanderia-Unique-API"

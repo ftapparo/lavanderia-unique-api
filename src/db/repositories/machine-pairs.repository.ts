@@ -49,6 +49,18 @@ export const machinePairsRepository = {
         return result.rows;
     },
 
+    async findByMachineId(machineId: string): Promise<MachinePairRecord | null> {
+        const result = await db.query<MachinePairRecord>(
+            `SELECT id, name, washer_machine_id, dryer_machine_id, active, created_at, updated_at
+             FROM machine_pairs
+             WHERE washer_machine_id = $1 OR dryer_machine_id = $1
+             LIMIT 1`,
+            [machineId],
+        );
+
+        return result.rows[0] || null;
+    },
+
     async listByUserId(userId: string): Promise<MachinePairView[]> {
         void userId;
         const result = await db.query<MachinePairView>(

@@ -19,6 +19,7 @@ export const settingsController = {
             pricePerUse: typeof req.body?.pricePerUse === 'number' ? req.body.pricePerUse : undefined,
             pricePerKwh: typeof req.body?.pricePerKwh === 'number' ? req.body.pricePerKwh : undefined,
             chargeNoShow: typeof req.body?.chargeNoShow === 'boolean' ? req.body.chargeNoShow : undefined,
+            cancelDeadlineBeforeMinutes: typeof req.body?.cancelDeadlineBeforeMinutes === 'number' ? req.body.cancelDeadlineBeforeMinutes : undefined,
         }, String(req.auth?.userId));
 
         res.ok(updated);

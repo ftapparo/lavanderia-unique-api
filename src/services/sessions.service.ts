@@ -106,9 +106,6 @@ export const sessionsService = {
         const controllableMachines = [washer, dryer]
             .map(toControllableMachine)
             .filter((machine): machine is ControllableMachine => Boolean(machine));
-        if (controllableMachines.length === 0) {
-            throw new AppError('Nenhuma maquina ativa com tuyaDeviceId configurado no par selecionado.', 409);
-        }
 
         const existingSession = await laundrySessionsRepository.findByReservationId(reservation.id);
         if (existingSession) {
@@ -125,37 +122,39 @@ export const sessionsService = {
             status: 'ACTIVE',
         });
 
-        try {
-            for (const machine of controllableMachines) {
-                const commandResult = await tuyaClient.turnOn(machine.deviceId);
+        if (controllableMachines.length > 0) {
+            try {
+                for (const machine of controllableMachines) {
+                    const commandResult = await tuyaClient.turnOn(machine.deviceId);
+                    await tuyaCommandLogsRepository.create({
+                        laundrySessionId: session.id,
+                        reservationId: reservation.id,
+                        machineId: machine.id,
+                        deviceId: machine.deviceId,
+                        command: 'TURN_ON',
+                        success: true,
+                        responsePayload: commandResult as Record<string, unknown>,
+                    });
+                }
+            } catch (error) {
                 await tuyaCommandLogsRepository.create({
                     laundrySessionId: session.id,
                     reservationId: reservation.id,
-                    machineId: machine.id,
-                    deviceId: machine.deviceId,
+                    machineId: null,
+                    deviceId: 'MULTI_DEVICE',
                     command: 'TURN_ON',
-                    success: true,
-                    responsePayload: commandResult as Record<string, unknown>,
+                    success: false,
+                    errorMessage: error instanceof Error ? error.message : 'Falha desconhecida ao energizar dispositivos.',
                 });
+
+                await laundrySessionsRepository.updateStatus({
+                    id: session.id,
+                    status: 'FORCED_FINISHED',
+                    finishedAt: new Date().toISOString(),
+                });
+
+                throw new AppError('Falha ao energizar par de maquinas no servico Tuya.', 502);
             }
-        } catch (error) {
-            await tuyaCommandLogsRepository.create({
-                laundrySessionId: session.id,
-                reservationId: reservation.id,
-                machineId: null,
-                deviceId: 'MULTI_DEVICE',
-                command: 'TURN_ON',
-                success: false,
-                errorMessage: error instanceof Error ? error.message : 'Falha desconhecida ao energizar dispositivos.',
-            });
-
-            await laundrySessionsRepository.updateStatus({
-                id: session.id,
-                status: 'FORCED_FINISHED',
-                finishedAt: new Date().toISOString(),
-            });
-
-            throw new AppError('Falha ao energizar par de maquinas no servico Tuya.', 502);
         }
 
         await reservationsRepository.updateStatus(reservation.id, 'IN_PROGRESS');

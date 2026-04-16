@@ -115,6 +115,13 @@ const mapReservationDbError = (error: unknown): never => {
 };
 
 export const reservationsService = {
+    async getById(id: string, userId: string, isAdmin: boolean): Promise<ReservationView> {
+        const reservation = await reservationsRepository.findByIdView(id);
+        if (!reservation) throw new AppError('Reserva nao encontrada.', 404);
+        if (!isAdmin && reservation.userId !== userId) throw new AppError('Acesso negado.', 403);
+        return reservation;
+    },
+
     async create(input: {
         unitId: string;
         machinePairId: string;
@@ -255,7 +262,28 @@ export const reservationsService = {
             throw new AppError('Reserva ja cancelada.', 409);
         }
 
-        const canceled = await reservationsRepository.cancel(reservationId, userId);
+        if (reservation.status === 'IN_PROGRESS') {
+            throw new AppError('Reserva em andamento. Cancelamento nao permitido apos check-in.', 409);
+        }
+
+        if (reservation.status === 'FINISHED') {
+            throw new AppError('Reserva ja finalizada. Cancelamento nao permitido.', 409);
+        }
+
+        const settings = await systemSettingsRepository.get();
+        const deadlineMinutes = settings.cancelDeadlineBeforeMinutes;
+        const now = new Date();
+        const reservationStart = new Date(reservation.start_at);
+        const deadline = new Date(reservationStart.getTime() - deadlineMinutes * 60 * 1000);
+        if (now >= deadline) {
+            throw new AppError('Prazo para cancelamento encerrado.', 409, {
+                deadlineMinutes,
+                deadline: deadline.toISOString(),
+            });
+        }
+
+        const reason = (isAdmin && reservation.user_id !== userId) ? 'ADMIN' : 'USER';
+        const canceled = await reservationsRepository.cancel(reservationId, userId, reason);
         if (!canceled) {
             throw new AppError('Falha ao cancelar reserva.', 500);
         }
@@ -268,6 +296,7 @@ export const reservationsService = {
             payload: {
                 status: canceled.status,
                 canceledAt: canceled.canceled_at,
+                canceledReason: canceled.canceled_reason,
             },
         });
 

@@ -158,10 +158,12 @@ export const billingService = {
                     const unitPrice = settings.billingMode === 'PER_KWH' ? settings.pricePerKwh : settings.pricePerUse;
                     const lineTotal = Number((quantity * unitPrice).toFixed(2));
 
+                    const chargeType = entry.laundrySessionId ? 'USE' : 'NO_SHOW';
                     await invoicesRepository.createItem({
                         invoiceId: invoice.id,
                         reservationId: entry.reservationId,
                         laundrySessionId: entry.laundrySessionId,
+                        chargeType,
                         description: `Reserva ${entry.machinePairName} em ${new Date(entry.startAt).toLocaleString('pt-BR')}`,
                         quantity,
                         unitPrice,

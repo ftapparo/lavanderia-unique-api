@@ -30,7 +30,7 @@ describe('web-server.api', () => {
         await StartWebServer(app);
 
         expect(listen).toHaveBeenCalledWith('3999', expect.any(Function));
-        expect(infoSpy).toHaveBeenCalledWith('API_SERVER_STARTED', { port: '3999' });
+        expect(infoSpy).toHaveBeenCalledWith('API_SERVER_STARTED', { protocol: 'http', port: '3999' });
 
         process.env.PORT = previousPort;
         infoSpy.mockRestore();

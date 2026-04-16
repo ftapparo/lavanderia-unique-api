@@ -11,6 +11,7 @@ router.get('/reservations', authMiddleware, asyncHandler(reservationsController.
 router.get('/reservations/busy', authMiddleware, asyncHandler(reservationsController.listBusy));
 router.get('/reservations/feed', authMiddleware, asyncHandler(reservationsController.feed));
 router.post('/reservations', authMiddleware, asyncHandler(reservationsController.create));
+router.get('/reservations/:id', authMiddleware, asyncHandler(reservationsController.getById));
 router.post('/reservations/:id/cancel', authMiddleware, asyncHandler(reservationsController.cancel));
 router.post('/reservations/:id/check-in', authMiddleware, checkinRateLimit, asyncHandler(reservationsController.checkin));
 

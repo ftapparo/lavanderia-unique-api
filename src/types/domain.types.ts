@@ -114,6 +114,7 @@ export type UnitView = {
 };
 
 export type MachineType = 'WASHER' | 'DRYER';
+export type MachineStatus = 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 
 export type MachineRecord = {
     id: string;
@@ -124,6 +125,7 @@ export type MachineRecord = {
     type: MachineType;
     tuya_device_id: string | null;
     active: boolean;
+    status: MachineStatus;
     created_at: string;
     updated_at: string;
 };
@@ -137,6 +139,42 @@ export type MachineView = {
     type: MachineType;
     tuyaDeviceId: string | null;
     active: boolean;
+    status: MachineStatus;
+};
+
+export type MachineMaintenanceRecord = {
+    id: string;
+    machine_id: string;
+    started_at: string;
+    ended_at: string | null;
+    problem: string;
+    solution: string | null;
+    created_by_user_id: string | null;
+    closed_by_user_id: string | null;
+    deleted_at: string | null;
+    deleted_by_user_id: string | null;
+    created_at: string;
+    updated_at: string;
+};
+
+export type MachineMaintenanceView = {
+    id: string;
+    machineId: string;
+    machineName: string;
+    machineNumber: number;
+    machineBrand: string;
+    machineModel: string;
+    machineType: MachineType;
+    startedAt: string;
+    endedAt: string | null;
+    problem: string;
+    solution: string | null;
+    createdByUserId: string | null;
+    createdByUserName: string | null;
+    closedByUserId: string | null;
+    closedByUserName: string | null;
+    deletedAt: string | null;
+    createdAt: string;
 };
 
 export type MachinePairRecord = {
@@ -172,6 +210,7 @@ export type ReservationRecord = {
     status: ReservationStatus;
     canceled_at: string | null;
     canceled_by_user_id: string | null;
+    canceled_reason: 'USER' | 'ADMIN' | 'MAINTENANCE' | null;
     created_at: string;
     updated_at: string;
 };
@@ -189,6 +228,9 @@ export type ReservationView = {
     endAt: string;
     status: ReservationStatus;
     canceledAt: string | null;
+    canceledByUserId: string | null;
+    canceledByUserName: string | null;
+    canceledReason: 'USER' | 'ADMIN' | 'MAINTENANCE' | null;
 };
 
 export type ReservationBusyView = {
@@ -299,7 +341,8 @@ export type SettingsVariableName =
     | 'BILLING_MODE'
     | 'PRICE_PER_USE'
     | 'PRICE_PER_KWH'
-    | 'CHARGE_NO_SHOW';
+    | 'CHARGE_NO_SHOW'
+    | 'CANCEL_DEADLINE_BEFORE_MINUTES';
 
 export type SettingsVariableRecord = {
     id: string;
@@ -322,6 +365,7 @@ export type SystemSettingsView = {
     pricePerUse: number;
     pricePerKwh: number;
     chargeNoShow: boolean;
+    cancelDeadlineBeforeMinutes: number;
     updatedByUserId: string | null;
     updatedAt: string;
 };
@@ -343,6 +387,7 @@ export type InvoiceItemRecord = {
     invoice_id: string;
     reservation_id: string | null;
     laundry_session_id: string | null;
+    charge_type: 'USE' | 'NO_SHOW';
     description: string;
     quantity: string;
     unit_price: string;
@@ -369,6 +414,7 @@ export type InvoiceItemView = {
     invoiceId: string;
     reservationId: string | null;
     laundrySessionId: string | null;
+    chargeType: 'USE' | 'NO_SHOW';
     description: string;
     quantity: number;
     unitPrice: number;

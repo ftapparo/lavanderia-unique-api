@@ -28,6 +28,13 @@ export const reservationsController = {
         res.ok(reservation, 201);
     },
 
+    async getById(req: Request, res: Response) {
+        const id = String(req.params.id || '');
+        if (!isUuid(id)) throw new AppError('Identificador de reserva invalido.', 400);
+        const reservation = await reservationsService.getById(id, String(req.auth?.userId), hasAdminAccess(req.auth?.role));
+        res.ok(reservation);
+    },
+
     async list(req: Request, res: Response) {
         const rows = await reservationsService.list(String(req.auth?.userId), hasAdminAccess(req.auth?.role));
         res.ok(rows);
